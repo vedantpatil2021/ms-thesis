@@ -1,0 +1,144 @@
+%% ============================================================
+%% chapters/background_and_related_work.tex
+%% Failures in Digital Agriculture
+%% ============================================================
+
+\chapter{Background and Related Work}
+\label{ch:background_and_related_work}
+
+This chapter surveys the research and technical foundations on which this thesis builds. Five areas are covered in sequence: the architecture and characteristics of edge and far-edge computing; container orchestration platforms and their deployment constraints; AI inference on constrained hardware; digital agriculture and UAV-based sensing systems; and wildlife monitoring with camera traps and autonomous drones. For each area, the survey identifies what existing work provides and where it stops establishing the gaps that Chapters 3 and 4 address.
+
+%% ============================================================
+\section{From Cloud to Edge to Far-Edge}
+\label{sec:ch1_intro}
+%% ============================================================
+%% ============================================================
+\subsection{The Origins of Edge Computing}
+\label{sec:origin}
+%% ============================================================
+The case for computing at the network edge rests on a simple observation: latency between a data source and a centralized cloud backend grows with physical distance, and many applications cannot tolerate that latency. Satyanarayanan's foundational work on cloudlets established the conceptual basis for small-scale data centers placed one wireless hop from end devices, demonstrating substantial latency reductions compared to cloud-only architectures \cite{satyanarayanan2017emergence}. Shi et al. formalized the definition of edge computing and characterized its core properties: proximity to data sources, low latency, geographic distribution, and the ability to process data without requiring a cloud round-trip \cite{shi2016edge}. These properties distinguish edge computing from cloud computing not in kind but in placement and scale.
+
+The literature has since expanded this definition through several related paradigms. Fog computing places computation at network nodes between devices and the cloud \cite{shi2016edge}. Mobile edge computing (MEC) integrates compute resources into cellular radio access networks \cite{mao2017survey}. Multi-access edge computing extends this further, enabling application hosting at the edge of operator networks. These paradigms share a common architecture: a hierarchy from cloud to near-edge infrastructure, with the near-edge tier providing intermediate compute closer to devices but still connected to cloud backends through reliable managed network paths.
+
+%% ============================================================
+\subsection{The Far-Edge Tier}
+\label{sec:far-edge}
+%% ============================================================
+The near-edge tier, comprising cellular base stations, enterprise gateway hardware, and regional server rooms, operates under fundamentally different conditions than the far-edge environments this thesis addresses. Near-edge infrastructure is reasonably well-provisioned, maintains reliable connections to cloud backends, and is administered by professional IT staff. Far-edge infrastructure is physically remote, power-constrained, and frequently disconnected from all upstream infrastructure. Hardware is chosen for portability and power budget rather than compute headroom. The people operating it are domain specialists: farmers, ecologists, field researchers , not platform engineers.
+
+The edge-to-cloud continuum literature acknowledges this distinction. Surveys of edge computing architectures identify a spectrum from cloud-connected edge nodes to devices that must operate with intermittent or absent connectivity \cite{moreschini2022cloud}. Wang et al. identify connectivity as a primary differentiator across edge deployment scenarios, noting that systems operating at physical field sites face fundamentally different infrastructure assumptions than those operating at well-connected edge nodes \cite{wang2023ondevice}. What this literature does not address in depth is the systems design question: what does it mean to build a containerized AI application that works when connectivity is structurally absent from the start, rather than occasionally unavailable?
+
+The distinguishing property of the far-edge environments in this thesis is that disconnection is not a degraded operating mode. It is the primary operating mode. A soybean field with no internet access is not a cloud deployment that has temporarily lost its connection. A wildlife conservation site in southeastern Ohio with no cellular infrastructure is not a near-edge deployment experiencing an outage. These environments require systems designed under the assumption that no external resource will be available during operation. That design assumption is what the existing literature calls for but does not provide.
+%% ============================================================
+\section{Container Orchestration at the Edge}
+\label{sec:container_orches}
+%% ============================================================
+%% ============================================================
+\subsection{Kubernetes and Its Constraints}
+\label{sec:kube}
+%% ============================================================
+Kubernetes has become the dominant standard for container orchestration in cloud environments. Its design reflects the assumptions of those environments: abundant compute resources distributed across multiple nodes, reliable networking between nodes and the control plane, and consistent access to external image registries. Deploying Kubernetes at the edge exposes all three assumptions. Resource constraints on edge hardware make the default Kubernetes footprint expensive. Network unreliability disrupts the control plane's assumption of consistent API server access. Limited or absent connectivity makes external registry access impossible at runtime \cite{cilic2023performance}.
+
+Several lightweight Kubernetes distributions have emerged to address the resource constraint. K3s, developed by Rancher Labs (now SUSE), packages Kubernetes as a single binary with an embedded SQLite datastore and a significantly reduced memory footprint, targeting IoT and edge hardware \cite{k3sdocs2024}. MicroK8s from Canonical offers a similar single-node distribution aimed primarily at developer workstations and IoT environments. Both reduce the compute overhead of running Kubernetes on constrained hardware. Neither addresses the networking and registry dependencies that manifest in environments without reliable connectivity.
+%% ============================================================
+\subsection{Cloud-to-Edge Orchestration Frameworks}
+\label{sec:cloud_to_edge}
+%% ============================================================
+KubeEdge extends Kubernetes to the edge by splitting the control plane between a cloud-side CloudCore component and an edge-side EdgeCore agent \cite{xiong2018kubeedge}. The architecture accommodates intermittent connectivity through local metadata caching: the edge node can continue running existing workloads during a disconnection. This is a meaningful capability for near-edge deployments where connectivity is occasionally lost. It does not address the far-edge case. When a container crashes and the node is offline, EdgeCore cannot reconstruct the pod without reconnecting to CloudCore. The system's offline tolerance is for running workloads, not for recovery from failure.
+
+OpenYurt extends Kubernetes for cloud-edge collaboration through a tunnel proxy layer that maintains cloud-to-edge control plane communication even when direct connectivity is unavailable \cite{yakubov2025comparative}. Like KubeEdge, it provides autonomy for running workloads during disconnection but requires cloud coordination for new deployments and pod reconstruction. Comparative empirical evaluation of these distributions on real edge hardware, including Raspberry Pi devices, confirms that K3s exhibits the lowest resource consumption among Kubernetes distributions while KubeEdge and OpenYurt impose additional overhead due to their cloud-synchronization components \cite{cilic2023performance}.
+
+Eclipse ioFog provides a microservice edge computing platform with a networking component (ComSat) that handles NAT traversal and data buffering during connectivity gaps \cite{iofog2019eclipse}. Its offline capability is buffering and queuing — it is designed to hold data until connectivity is restored, not to reconstruct failed services from local resources. It still requires a centralized Controller for microservice orchestration.
+
+The consistent finding across this body of work is that existing orchestration platforms were designed for environments where connectivity is the norm and disconnection is the exception. None was built for the premise that connectivity may never exist during a mission. Empirical performance comparisons confirm functional differences between distributions but do not address the deployment scenario of zero-connectivity agricultural or ecological field sites \cite{yakubov2025comparative, cilic2023performance}.
+%% ============================================================
+\subsection{Docker Compose and Lightweight Orchestration}
+\label{sec:docker_compose}
+%% ============================================================
+Docker Compose provides multi-container application orchestration through declarative YAML configuration without the control plane overhead of Kubernetes-family systems. For single-host deployments where all containers communicate on localhost, Docker Compose is operationally simpler and resource-lighter than K3s. The cloud-native orchestration at the edge review by Seron Esnal et al. notes that Docker Compose lacks the dynamic scheduling, self-healing, and multi-node capabilities of Kubernetes distributions, but for constrained single-node deployments with stable service topologies, those capabilities may not be required \cite{buinevich2023cloudnative}. The choice between K3s and Docker Compose is therefore a function of hardware profile, workload complexity, and the inter-node communication requirements of the specific deployment.
+
+%% ============================================================
+\section{AI Inference on Constrained Edge Hardware}
+\label{sec:ai_infer}
+%% ============================================================
+%% ============================================================
+\subsection{Model Optimization for Edge Deployment}
+\label{sec:model_optimization}
+%% ============================================================
+The dominant research thread in edge AI has focused on reducing the computational footprint of AI models to fit within the resource envelope of edge devices. Quantization reduces weight precision from 32-bit or 16-bit floating point to 8-bit or lower integer representations, substantially reducing both model size and inference latency \cite{wang2023ondevice}. Pruning removes redundant parameters. Knowledge distillation trains smaller student models to replicate the behavior of larger teacher models. These techniques have enabled deployment of sophisticated computer vision models on devices ranging from microcontrollers to single-board computers.
+
+YOLO-family models have become the standard for real-time object detection in edge AI applications. YOLOv5 in particular has been widely adopted for wildlife detection in drone imagery, achieving strong detection performance on aerial datasets while remaining deployable on GPU-equipped field laptops and edge hardware \cite{waid2023dataset}. The progression from YOLOv5 through YOLOv8 and YOLOv11 has continued to improve accuracy-efficiency trade-offs relevant to edge deployment scenarios.
+%% ============================================================
+\subsection{The Platform Assumption Gap}
+\label{sec:platform_gap}
+%% ============================================================
+The model optimization literature addresses the efficiency of inference on constrained hardware. It assumes, largely without examination, that the platform hosting the model is functional. Wang et al. note that edge AI models must be designed to function effectively under varying connectivity and environmental conditions, but frame this as a model design challenge rather than a platform design challenge \cite{wang2023ondevice}. The systems layer — container orchestration, image lifecycle management, networking — is treated as infrastructure that the model sits on top of, not as a research problem in its own right.
+
+This assumption is reasonable in near-edge deployments where the infrastructure layer is professionally managed and well-provisioned. It is not reasonable in far-edge deployments where the infrastructure layer is whatever the researcher carried into the field. The contribution of this thesis is not to the model optimization thread but to the platform thread: how to build the infrastructure layer so that it functions at the far edge regardless of what the site provides.
+
+
+%% ============================================================
+\section{Digital Agriculture and UAV-Based Sensing}
+\label{sec:digi_agri}
+%% ============================================================
+%% ============================================================
+\subsection{Precision Agriculture and the Data Timeliness Problem}
+\label{sec:presion_agri}
+%% ============================================================
+Precision agriculture uses fine-grained spatial and temporal data to optimize farm management decisions. Drones equipped with multispectral, hyperspectral, and thermal cameras have emerged as central tools for crop monitoring, enabling field-scale surveys of crop health, pest damage, nutrient deficiency, and growth patterns at resolutions that satellite imagery cannot match and at frequencies that ground surveys cannot sustain \cite{habib2024transforming}. Anam et al. provide a systematic review of UAV and AI integration in precision agriculture, documenting the range of detection targets and algorithmic approaches deployed across crop types and geographic regions \cite{anam2024uav}.
+
+The operational value of drone-based crop monitoring depends critically on when the results arrive. Analysis delivered hours or days after a flight is historical. Analysis delivered during or immediately after the flight is actionable. The data timeliness problem has driven interest in on-site processing architectures that eliminate the cloud round-trip from the analysis pipeline. The cloud-edge-device collaborative computing model applied to smart agriculture, reviewed by Gu et al., characterizes the three-tier architecture (cloud, edge node, field devices) and describes edge computing's role in enabling low-latency processing near the data source \cite{gu2025cloudedge}. Timely decision support, responsive irrigation control, and automated pest response are all cited as applications that require edge-local processing rather than cloud-dependent analysis.
+%% ============================================================
+\subsection{Edge Deployment in Agricultural Environments}
+\label{sec:egde_deploy}
+%% ============================================================
+What the agricultural AI literature does not address is what happens to the edge node when the connectivity between tiers is absent. The three-tier model assumes connectivity between tiers is available at the time of processing. Every system reviewed in the cloud-edge-device smart agriculture literature routes data through network paths, whether cloud-to-edge or edge-to-device, and treats those paths as reliable. The deployment scenario this thesis addresses — a single field laptop with no internet access, running the full AI pipeline entirely locally — is not represented in the literature.
+
+The TELUS Agriculture industry pilot cited in conference presentations as an example of cloud-native AI deployment across the full edge-to-cloud continuum validates the architecture when connectivity is present. It does not address the case where connectivity is absent. The gap between what precision agriculture needs (fast, on-site analysis) and what the existing deployment literature covers (connected edge node coordinating with cloud) is where OpenPASS operates.
+
+%% ============================================================
+\section{Wildlife Monitoring: Camera Traps, Drones, and the Autonomy Gap}
+\label{sec:wildwife_moni}
+%% ============================================================
+%% ============================================================
+\subsection{Camera Trap Networks and AI-Based Detection}
+\label{sec:camera_trap}
+%% ============================================================
+Camera traps have become foundational tools in wildlife ecology. Distributed across study areas, they provide non-invasive, continuous monitoring of animal presence and activity without requiring sustained human attention \cite{corcoran2021automated}. The volume of imagery generated by large-scale camera trap deployments has driven substantial interest in automated detection and classification pipelines. Vélez et al. evaluate AI platforms for processing camera trap data, finding that automated recognition workflows substantially reduce the human annotation burden while maintaining acceptable detection accuracy \cite{velez2023evaluation}. Velasco-Montero et al. demonstrate reliable on-device AI integration in camera traps using Raspberry Pi hardware, enabling local detection events without cloud transmission \cite{velascomontero2024reliable}.
+
+The practical implication of on-device detection is that camera traps can generate structured detection events — timestamped, confidence-scored, GPS-annotated — without requiring network access for model inference. This makes them suitable as the sensing layer of an autonomous pipeline: they detect, classify, and report without depending on connectivity to do so.
+%% ============================================================
+\subsection{Drone-Based Behavioral Observation}
+\label{sec:drone_based}
+%% ============================================================
+Drones extend ecological observation capacity beyond what ground-based methods can sustain. Corcoran et al. review automated wildlife detection using drones, noting that aerial platforms offer substantially greater spatial coverage and access to terrain that ground observers cannot reach, while also enabling observation of animal groups at scales and densities that individual-level ground surveys cannot capture \cite{corcoran2021automated}. The combination of aerial imaging with computer vision models has enabled automated species detection, population counting, and behavioral analysis in a range of ecological contexts.
+
+Manual drone piloting for behavioral observation creates an operational bottleneck that constrains data quality and throughput. An operator who must simultaneously control the aircraft and operate the camera cannot maintain consistent observation geometry, altitude, or tracking behavior across missions. WildWings, developed by Kline et al. and published in Methods in Ecology and Evolution, addresses this limitation with an autonomous drone system that uses YOLOv5su detection and a herd-centroid navigation policy to track group-living animals without pilot input \cite{kline2025wildwing}. The system achieves 87\% navigation accuracy compared to an expert pilot in simulation, and produces high-quality annotated aerial video suitable for downstream behavioral analysis. WildWings represents the state of the art in autonomous aerial wildlife tracking.
+%% ============================================================
+\subsection{The Closed-Loop Gap}
+\label{sec:drone_based}
+%% ============================================================
+What neither camera trap AI systems nor autonomous aerial tracking systems address is the pipeline that connects them. Camera trap networks detect events and log them. Autonomous aerial systems can track animals once positioned over them. The handoff between the two — the decision to dispatch the drone, navigate it to the detection site, and initiate tracking — remains a human task in every documented system. No prior work constructs a fully autonomous pipeline from ground-level detection event to aerial behavioral observation without human intervention at the dispatch decision point.
+
+This gap has both a functional dimension and an infrastructural dimension. The functional dimension is the orchestration logic that routes a detection event through drone dispatch and mission execution. The infrastructural dimension is operating the entire pipeline on field-constrained ARM64 hardware without connectivity at any stage of the pipeline. The SmartWilds Smart Backpack system described in Chapter 4 addresses both dimensions simultaneously.
+
+%% ============================================================
+\section{MQTT as a Local Event Messaging Protocol}
+\label{sec:wildwife_moni}
+%% ============================================================
+The MQTT (Message Queuing Telemetry Transport) protocol is the established standard for lightweight publish-subscribe messaging in IoT and sensor network deployments. Its design targets resource-constrained devices and unreliable network environments: the minimum message overhead is two bytes, QoS levels range from at-most-once to exactly-once delivery, and persistent sessions allow brokers to queue messages for clients that temporarily disconnect \cite{mqtt2019oasis}. The protocol's lightweight characteristics make it well-suited for coordinating detection events between camera traps and pipeline orchestration components on a single edge node.
+
+In the Smart Backpack architecture described in Chapter 4, MQTT runs locally: the Mosquitto broker, the camera trap subscriber, and the SmartFields orchestrator all communicate on localhost without any external network path. This use of MQTT differs from its typical IoT deployment pattern, where it routes data from edge devices to cloud backends. Running MQTT locally makes it a coordination mechanism between containerized services rather than a connectivity bridge — exploiting its reliability guarantees while eliminating any dependency on external network infrastructure.
+%% ============================================================
+\section{Summary of Gaps}
+\label{sec:summary_gap}
+%% ============================================================
+The literature reviewed in this chapter establishes a clear boundary between what is known and what this thesis addresses.
+
+Edge computing architectures and container orchestration platforms have been extensively studied for environments where connectivity is normal and intermittent connectivity is a degraded mode to be tolerated. No prior work characterizes what happens when connectivity is structurally absent from the start and builds an orchestration architecture specifically for that condition.
+
+Agricultural AI and UAV-based crop monitoring research has established on-site processing as a design goal but has not addressed the systems-level question of how to make the platform underneath the AI models resilient to the infrastructure conditions of real farm field deployments.
+
+Wildlife monitoring research has produced capable autonomous aerial tracking systems and AI-enabled camera trap networks but has not closed the loop between ground detection and aerial dispatch autonomously, and has not addressed the offline operation requirement for field sites without connectivity infrastructure.
+
+This thesis addresses all three gaps through two field deployments. Chapter 3 characterizes and resolves the platform failures that far-edge deployment exposes in the agricultural context. Chapter 4 applies the resulting design principles proactively in the wildlife monitoring context, closing the detection-to-aerial-observation loop on field-constrained hardware with zero runtime network dependency.
