@@ -9,7 +9,7 @@
 
 Chapter 3 was about encountering the field unprepared. A system built on reasonable assumptions met an environment that violated all of them, and the failures that followed were structural, not incidental. The inflection-point framework that emerged from that experience was a reactive product of things going wrong.
 
-This chapter is about the opposite question: what happens when you apply those lessons proactively, before anything breaks, on hardware your previous system never ran on, orchestrated by a framework your previous system never used, in a domain your previous system never touched? The answer, documented through a summer 2025 field deployment at The Wilds Conservation Center in southeastern Ohio, is that offline-first design holds. The principles generalize. The chapter that follows is the evidence.
+This chapter is about the opposite question: what happens when you apply those lessons proactively, before anything breaks, on hardware your previous system never ran on, orchestrated by a framework your previous system never used, in a domain your previous system never touched? The answer, documented through a summer 2025 field deployment, is that offline-first design holds. The principles generalize. The chapter that follows is the evidence.
 
 %% ============================================================
 \section{The Attentional Bottleneck in Wildlife Monitoring}
@@ -24,11 +24,12 @@ For aerial follow-up, the standard answer has been a human operator. A camera tr
 The problem is structural. A single human operator cannot simultaneously monitor detection alerts from multiple camera traps across a large enclosure, maintain situational awareness of active drone flight, and operate an aerial camera. These tasks compete for the same cognitive resource. The result is an attention bottleneck that no amount of operator skill or experience resolves. Throughput is limited not by the speed of detection or the capability of the drone, but by the bandwidth of the human in the dispatch loop.
 
 Removing the human from the dispatch decision is the prerequisite for closing this loop. The camera trap fires, the drone launches, the aircraft arrives at the detection site, the aerial observation is captured, and the drone returns to base. No human makes any of those decisions. The pipeline is autonomous end to end. That is the problem this chapter solves.
+
 %% ============================================================
 \section{What Came Before: Drones, Camera Traps, and the Gap Between Them}
 \label{sec:ch4_context}
 %% ============================================================
-Drone-based wildlife monitoring is not new. The literature documents a range of applications: population surveys, habitat mapping, individual identification, behavioral observation, and anti-poaching patrol. Corcoran et al. (2021) provide a comprehensive synthesis of drone-based wildlife detection, noting that drones offer substantially greater spatial coverage than ground surveys with reduced observer presence that would otherwise alter animal behavior \cite{corcoran2021automated}. The combination of aerial platforms with computer vision models has become a standard research approach, with YOLO-family models achieving strong detection performance across multiple species in aerial imagery \cite{waid2023dataset}.
+Drone-based wildlife monitoring is not new. The literature documents a range of applications: population surveys, habitat mapping, individual identification, behavioral observation, and anti-poaching patrol. Corcoran et al. provide a comprehensive synthesis of drone-based wildlife detection, noting that drones offer substantially greater spatial coverage than ground surveys with reduced observer presence that would otherwise alter animal behavior \cite{corcoran2021automated}. The combination of aerial platforms with computer vision models has become a standard research approach, with YOLO-family models achieving strong detection performance across multiple species in aerial imagery \cite{waid2023dataset}.
 
 Autonomous tracking from aerial platforms has matured significantly. WildWings, developed by Kline et al. at The Ohio State University and published in Methods in Ecology and Evolution, is an open-source autonomous UAS that uses YOLOv5 computer vision to detect and track group-living animals from a Parrot ANAFI drone \cite{kline2025wildwing}. The system implements a herd-centroid navigation policy that adjusts drone position in real time based on detected animal locations, achieving 87\% navigation accuracy compared to an expert pilot in simulation testing. WildWings represents the state of the art in onboard autonomous aerial tracking for wildlife research.
 
@@ -38,7 +39,8 @@ What the literature has not produced is a system that connects these two layers 
 
 Beyond the functional gap, there is an infrastructural gap that the wildlife monitoring literature has not engaged with at all. Remote conservation sites have no cellular infrastructure, no WiFi, and no path to a cloud backend. Systems designed for cloud-connected operation, even those with partial offline tolerance, were not built for environments where connectivity is structurally absent throughout an entire deployment. The need for fully offline autonomous operation from ground detection through aerial observation and data capture is a systems design requirement that the existing literature does not address.
 
-This chapter addresses both gaps. The SmartWilds deployment at The Wilds introduces an orchestration layer that connects ground detection to autonomous aerial dispatch, operates the full pipeline without any external network connectivity, and does so on field-constrained ARM64 hardware using Docker Compose as the orchestration framework.
+This chapter addresses both gaps. The SmartWilds deployment introduces an orchestration layer that connects ground detection to autonomous aerial dispatch, operates the full pipeline without any external network connectivity, and does so on field-constrained ARM64 hardware using Docker Compose as the orchestration framework.
+
 %% ============================================================
 \section{SmartWilds and The Wilds Deployment}
 \label{sec:ch4_arch_decision}
@@ -54,6 +56,7 @@ The resulting system, the Smart Backpack, was validated at Tuttle Park near The 
 The research question remains the one The Wilds posed: can the full detection-to-aerial-observation pipeline operate autonomously and offline? Tuttle Park is where the answer was tested.
 
 The hardware platform was a Raspberry Pi 4B with 8GB RAM running ARM64 Ubuntu. Total storage was 64GB, split between operating system and data. The drone was a Parrot ANAFI with a 30-minute flight time and a stabilized gimbal camera. Power came from a 200Wh portable battery supporting more than 8 hours of continuous operation. The entire system was designed to be carried into the field as a single self-contained unit.
+
 %% ============================================================
 \section{Why Docker Compose, Not K3S}
 \label{sec:ch4_smartfields}
@@ -66,7 +69,8 @@ K3S was the right choice for OpenPASS because OpenPASS runs on an x86\_64 field 
 
 A Raspberry Pi 4B running ARM64 is a different device. K3S's minimum server footprint is 512MB RAM. On a device with 8GB total, dedicating that footprint to orchestration infrastructure for a system with eight containers that all communicate over localhost is a poor trade. Docker Compose on host networking eliminates all inter-container routing overhead, makes all services directly accessible via localhost without NAT, and gives the Olympe drone SDK direct USB access without the virtualization layer that container networking would otherwise impose. The entire communication model of the Smart Backpack is local: camera trap events arrive via MQTT on the local broker, SmartFields calls OpenPassLite over HTTP on localhost, OpenPassLite sends commands to the drone over USB. There is no inter-node traffic. Docker Compose handles this topology correctly and efficiently.
 
-The deeper point is architectural. Offline-first design is a principle, not a platform. It was implemented in Chapter 3 using K3S with extended containerd and local Helm repositories. It is implemented here using Docker Compose with locally stored images and no external registry dependency at runtime. The orchestration layer is secondary. The design constraint, that the system must be self-sufficient before it leaves the building, is the constant.
+The deeper point is architectural. Offline-first design is a principle, not a platform. It was implemented in Chapter 3 using K3S with air-gapped image pre-population and local Helm repositories. It is implemented here using Docker Compose with locally stored images and no external registry dependency at runtime. The orchestration layer is secondary. The design constraint, that the system must be self-sufficient before it leaves the building, is the constant.
+
 %% ============================================================
 \section{System Architecture: Eight Containers, One Pipeline}
 \label{sec:ch4_openpasslite}
@@ -76,6 +80,7 @@ The Smart Backpack runs eight containerized services on the Raspberry Pi 4B, all
 Table 4.1 lists all eight services, their ports, ownership, and roles.
 
 The three services that constitute my direct contribution are the MQTT Subscriber, SmartFields, and OpenPassLite. WildWings is an external component developed by a collaborating lab and integrated into the pipeline through SmartFields. Attribution in the table reflects this boundary explicitly.
+
 \subsection{MQTT Subscriber}
 \label{subsec:ch4_ltt}
 The MQTT Subscriber bridges ground-level detection events to the pipeline orchestrator. It subscribes to camera trap topics on the local Mosquitto broker at QoS 1, which guarantees at-least-once delivery even under brief disconnections. When an event arrives, it looks up the camera trap's GPS coordinates from a configuration file and forwards them to SmartFields via HTTP POST.
@@ -100,15 +105,16 @@ A threading lock prevents concurrent mission execution. One drone means one acti
 
 \textbf{Stage monitoring:}
 
-SmartFields monitors mission progress by polling service log files every two seconds for completion signatures. Success is detected by the pattern \textit{Mission \{name\} thread finished''. Failure is detected by any of Mission failed'', AssertionError'', or connection timed out''}. This approach avoids tight service coupling while maintaining reliable stage transition logic.
+SmartFields monitors mission progress by polling service log files every two seconds for completion signatures. Success is detected by the pattern \texttt{Mission \{name\} thread finished}. Failure is detected by any of \texttt{Mission failed}, \texttt{AssertionError}, or \texttt{connection timed out}. This approach avoids tight service coupling while maintaining reliable stage transition logic.
 
 \subsection{OpenPassLite}
 \label{subsec:ch4_openpasslite_additions}
-OpenPassLite is a modular drone mission framework built on the Parrot Olympe SDK. Its defining architectural feature is a drop-in mission model: each flight behavior is a single self-contained Python file at \textit{mission/{mission\_name}/script.py}. New mission types require no changes to the framework core.
+OpenPassLite is a modular drone mission framework built on the Parrot Olympe SDK \cite{parrot2024olympe}. Its defining architectural feature is a drop-in mission model: each flight behavior is a single self-contained Python file at \textit{mission/\{mission\_name\}/script.py}. New mission types require no changes to the framework core.
 
 Three missions are implemented for this deployment. TAKEOFF lifts the drone off, holds for 8-second stabilization, and enters hover. LTT (Location Target Travel) is the primary navigation mission: it validates GPS lock, executes takeoff, sets gimbal pitch to -70 degrees, waits for stabilization, then moves to the target coordinates at 13 meters with orientation toward the target. RTB (Return to Base) configures the return-to-home location and executes auto-land, always running regardless of whether Stage 2 succeeded.
 
 The same OpenPassLite framework was used for orthomosaic survey flights in the OpenPASS agricultural deployment. It is domain-agnostic by design. A drone mission framework does not need to know whether it is flying over a soybean field or a wildlife enclosure.
+
 %% ============================================================
 \section{Field Validation: Tuttle Park, Columbus, Ohio}
 \label{sec:ch4_principles_applied}
@@ -117,13 +123,17 @@ The Smart Backpack was validated at Tuttle Park near The Ohio State University c
 
 Campus WiFi and a personal hotspot were available at the site during the deployment. The Smart Backpack used neither. Every service in the pipeline communicates on localhost. Images are served from the on-node Docker cache. The drone communicates over USB. The MQTT broker is local. At no point in any of the 38 mission cycles did any system component make an external network call. The offline-first design was not tested by forcing a disconnected environment at Tuttle Park. It was demonstrated by the fact that connectivity was irrelevant to the system's operation.
 
-Over the 20-hour deployment, the system processed more than 45 detection events and completed 38 full autonomous mission cycles, yielding a mission success rate of approximately 92 percent. No human intervention was required at the dispatch decision point for any mission. These figures are field estimates derived from post-deployment log file review, consistent with direct observation during the deployment, and reported here as approximate.
+Over the 20-hour deployment, the system processed 45 detection events in total. Of these, 41 resulted in a dispatch attempt; the remaining 4 events arrived while a mission was already in progress and were correctly rejected by the concurrency lock. Of the 41 attempts, 38 completed as full autonomous mission cycles, yielding a mission success rate of 92.7\%. No human intervention was required at the dispatch decision point for any mission. These figures are derived from post-deployment log file review and are reported here as field estimates consistent with direct observation during the deployment.
+
+%% P2.4 FIX: Add proxy ecological validity caveat in results section
+It is important to interpret this figure in the context of the validation conditions. The proxy human subject moved predictably within a bounded area, whereas ungulate behavior in a 220-acre enclosure involves variable movement, vegetation occlusion, GPS multipath, and detection confidence that fluctuates with animal posture and group density. The 92.7\% success rate reflects system performance under controlled proxy conditions. Performance at a live conservation site may differ, as discussed further in the limitations section of Chapter 5.
 
 \subsection{What a Successful Mission Looked Like}
 \label{subsec:ch4_p2_applied}
 A complete mission cycle began with the camera trap detection event and ended with the drone landed and the system returned to idle. Approximate timing from field observation: detection event to drone airborne was roughly 45 seconds, accounting for MQTT routing, SmartFields initialization, and OpenPassLite takeoff and stabilization. Full cycle completion from detection to system reset was approximately 150 seconds.
 
 Each successful cycle produced a synchronized data record. The camera trap captured the initial detection frame with YOLOv5 bounding boxes and a timestamp. WildWings captured approximately 50 annotated aerial frames with telemetry, operating at 5 meters altitude with gimbal pitch at -65 degrees. SmartFields logged the full mission timeline across all three stages. The output of each cycle was a complete multimodal record generated entirely without human involvement and stored entirely on-node.
+
 \subsection{Failure Analysis}
 \label{subsec:ch4_p3_applied}
 The 8 percent of mission attempts that did not complete as full cycles fell into two categories: environmental and system.
@@ -133,14 +143,15 @@ The 8 percent of mission attempts that did not complete as full cycles fell into
 \textbf{System failures} included drone battery depletion mid-mission, Docker container restarts triggered by memory pressure during extended operation, and a small number of code-level edge cases in the pipeline that produced assertion errors under specific timing conditions. The battery failures were managed by the RTB stage's unconditional execution, meaning the drone landed safely even when power was low. The container restarts and assertion failures were logged and informed post-deployment software refinements.
 
 Splitting the failure modes this way matters for how the results should be read. The environmental failures say something about where the system can and cannot safely fly. The system failures say something about software robustness under extended operation. Neither category indicates a problem with the offline-first architecture itself, which performed without incident throughout the deployment.
+
 %% ============================================================
 \section{Principles Applied, Principles Confirmed}
 \label{sec:ch4_results}
 %% ============================================================
 The design principles that Chapter 3 arrived at reactively, by encountering failures and resolving them, were applied to this deployment before anything was built. Every service runs from locally stored Docker images. No image pull is attempted at runtime. All inter-service communication is on localhost. The drone communicates over USB, not WiFi. The MQTT broker is local. The AI models are loaded from on-node storage. There is no step in the pipeline that requires or assumes external connectivity.
 
-The result was that the field environment at The Wilds did not break the system's infrastructure. The failures that occurred were environmental and software-level, not infrastructure-level. No pod network collapsed because of a firewall. No container failed to reconstruct because a registry was unreachable. No startup resource spike crashed the inference layer. The three categories of failure that Chapter 3 found at Stoutsville were absent here, because the architecture that Chapter 3 produced was applied before they had a chance to appear.
+The result was that the Tuttle Park deployment did not break the system's infrastructure. The failures that occurred were environmental and software-level, not infrastructure-level. No pod network collapsed because of a firewall. No container failed to reconstruct because a registry was unreachable. No startup resource spike crashed the inference layer. The three categories of failure that Chapter 3 found at Stoutsville were absent here, because the architecture that Chapter 3 produced was applied before they had a chance to appear.
 
-Same principle. Different orchestration layer. Different hardware. Different domain. Same outcome.
+Same principle. Different orchestration layer. Different hardware. Different domain. Results consistent with the principle generalizing.
 
-That consistency is the thesis's central empirical claim. Offline-first design is not a K3S feature. It is not specific to digital agriculture, or to x86 hardware, or to Kubernetes-family orchestration. It is a design philosophy that applies wherever a containerized AI system must operate in a physical environment that does not guarantee connectivity. Chapter 5 draws this argument together across both deployments and examines what it implies for how far-edge AI systems should be built.
+That consistency is the thesis's central empirical finding. Offline-first design is not a K3S feature. It is not specific to digital agriculture, or to x86 hardware, or to Kubernetes-family orchestration. It is a design philosophy that applies wherever a containerized AI system must operate in a physical environment that does not guarantee connectivity. Chapter 5 draws this argument together across both deployments and examines what it implies for how far-edge AI systems should be built.
