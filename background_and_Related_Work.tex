@@ -10,7 +10,7 @@ This chapter surveys the research and technical foundations on which this thesis
 
 %% ============================================================
 \section{From Cloud to Edge to Far-Edge}
-\label{sec:ch1_intro}
+\label{sec:bg_cloud_edge}
 %% ============================================================
 %% ============================================================
 \subsection{The Origins of Edge Computing}
@@ -98,7 +98,7 @@ The TELUS Agriculture industry pilot cited in conference presentations as an exa
 
 %% ============================================================
 \section{Wildlife Monitoring: Camera Traps, Drones, and the Autonomy Gap}
-\label{sec:wildwife_moni}
+\label{sec:wildlife_monitoring}
 %% ============================================================
 %% ============================================================
 \subsection{Camera Trap Networks and AI-Based Detection}
@@ -116,7 +116,7 @@ Drones extend ecological observation capacity beyond what ground-based methods c
 Manual drone piloting for behavioral observation creates an operational bottleneck that constrains data quality and throughput. An operator who must simultaneously control the aircraft and operate the camera cannot maintain consistent observation geometry, altitude, or tracking behavior across missions. WildWings, developed by Kline et al. and published in Methods in Ecology and Evolution, addresses this limitation with an autonomous drone system that uses YOLOv5su detection and a herd-centroid navigation policy to track group-living animals without pilot input \cite{kline2025wildwing}. The system achieves 87\% navigation accuracy compared to an expert pilot in simulation, and produces high-quality annotated aerial video suitable for downstream behavioral analysis. WildWings represents the state of the art in autonomous aerial wildlife tracking.
 %% ============================================================
 \subsection{The Closed-Loop Gap}
-\label{sec:drone_based}
+\label{sec:closed_loop_gap}
 %% ============================================================
 What neither camera trap AI systems nor autonomous aerial tracking systems address is the pipeline that connects them. Camera trap networks detect events and log them. Autonomous aerial systems can track animals once positioned over them. The handoff between the two — the decision to dispatch the drone, navigate it to the detection site, and initiate tracking — remains a human task in every documented system. No prior work constructs a fully autonomous pipeline from ground-level detection event to aerial behavioral observation without human intervention at the dispatch decision point.
 
@@ -124,7 +124,7 @@ This gap has both a functional dimension and an infrastructural dimension. The f
 
 %% ============================================================
 \section{MQTT as a Local Event Messaging Protocol}
-\label{sec:wildwife_moni}
+\label{sec:mqtt_protocol}
 %% ============================================================
 The MQTT (Message Queuing Telemetry Transport) protocol is the established standard for lightweight publish-subscribe messaging in IoT and sensor network deployments. Its design targets resource-constrained devices and unreliable network environments: the minimum message overhead is two bytes, QoS levels range from at-most-once to exactly-once delivery, and persistent sessions allow brokers to queue messages for clients that temporarily disconnect \cite{mqtt2019oasis}. The protocol's lightweight characteristics make it well-suited for coordinating detection events between camera traps and pipeline orchestration components on a single edge node.
 
