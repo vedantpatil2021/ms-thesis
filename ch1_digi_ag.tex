@@ -1,0 +1,197 @@
+%% ============================================================
+%% chapters/chapter1_openpass.tex
+%% Chapter 1: OpenPASS — Characterizing Far-Edge AI Deployment
+%% Failures in Digital Agriculture
+%% ============================================================
+
+\chapter{OpenPASS: Characterizing Far-Edge AI Deployment Failures in Digital Agriculture}
+\label{ch:openpass}
+
+%% ============================================================
+\section{When the Field Rewrites the Spec}
+\label{sec:ch1_intro}
+%% ============================================================
+Digital agriculture has a timing problem. Crop stress, pest infestation, and nutrient deficiency do not wait for a convenient connectivity window. The value of an aerial survey is in the analysis it produces during or immediately after the mission, while the flight crew is still on-site and can act. A system that uploads raw imagery to a cloud backend for processing, waits for results, and returns them hours later delivers information that is correct but no longer actionable. The window has closed.
+
+This constraint drives a straightforward architectural requirement: inference must happen at the field edge, on the hardware that made the flight, without a cloud round-trip. The UAV captures imagery, the edge node processes it, and the farmer receives crop health analysis before the mission ends. No external network is required, and none should be assumed.
+
+OpenPASS, the Open Precision Agriculture Sensing System, was built to satisfy exactly this requirement. It is a containerized AI application running on K3S, a lightweight single-binary Kubernetes distribution, that performs crop health inference on drone-captured aerial imagery entirely at the field edge. The edge node is a standard x86\_64 field laptop. The drone is a UAV platform capturing high-resolution aerial imagery. The pipeline moves from flight to orthomosaic to crop health analysis without touching external infrastructure. The intelligence is at the field level. That was the design intent.
+
+What the design intent did not account for was the field itself.
+The first real-world deployment of OpenPASS outside a controlled lab environment took place at a soybean farm in Stoutsville, Ohio, in summer 2025. The system that had been tested extensively in the lab, where infrastructure assumptions went unquestioned, met a physical environment that honored none of them. The deployment did not fail once, in one way, for one reason. It failed three times, in three distinct ways, each tracing back to a different assumption the platform had made about the world it would operate in.
+
+This chapter documents those failures, explains why they were structural rather than incidental, and describes the architectural solutions that resolved each one. The framework that emerges from this analysis, what we call the inflection-point classification, is the chapter's primary contribution. It is a way of thinking about far-edge deployment failures that makes them tractable: nameable, documentable, and addressable before the next system ships.
+%% ============================================================
+\section{What Came Before: Edge Orchestration and Its Assumptions}
+\label{sec:ch1_arch}
+%% ============================================================
+Container orchestration for edge environments is an active research area, and several platforms have emerged to address it. Understanding where they succeed and where they fall short is necessary context for understanding what OpenPASS had to solve.
+
+KubeEdge extends Kubernetes to the edge by splitting the control plane: cloud-side components handle scheduling and state synchronization, while a lightweight EdgeCore agent runs workloads on the edge node [Xiong et al., 2018, SEC]. The architecture explicitly accommodates intermittent connectivity through local metadata caching. In practice, however, KubeEdge's offline tolerance is conditional. The edge node can continue running existing workloads through a disconnection. What it cannot do is reconstruct a failed pod without reconnecting to the cloud-side control plane. When a container crashes and the node is offline, recovery requires the node to come back online — a requirement that is documented in the project's own issue tracker and fundamentally incompatible with far-edge environments where extended disconnection is the norm, not the exception.
+
+OpenYurt takes a similar architectural approach, tunneling Kubernetes control plane communication through a cloud-edge proxy layer and adding autonomy features for disconnected edge nodes [Comparative Kubernetes Distributions Study, arXiv 2025]. Like KubeEdge, it tolerates disconnection for running workloads but does not support complete self-sufficient reconstruction without cloud coordination.
+
+K3S vanilla is the closest to what OpenPASS is built on, and it is worth understanding precisely what vanilla K3S provides and what it does not. K3S is a lightweight Kubernetes distribution packaged as a single binary with an embedded SQLite datastore, designed for resource-constrained edge hardware [Rancher Labs / SUSE]. Out of the box, it uses Flannel as its CNI plugin with a VXLAN backend. It supports private registry mirroring via configuration. It runs well on x86\_64 hardware. What it does not do is account for enterprise network environments that block the UDP ports Flannel requires, or for deployment sites with zero internet access, or for startup resource contention on constrained hardware under real field load. Those problems exist in its documentation as known requirements and warnings, not as solved problems [K3S Requirements, docs.k3s.io].
+
+MicroK8s is a single-node Kubernetes distribution from Canonical aimed at developer workstations and IoT. It is not designed for far-edge deployment and has no documented path to offline-first operation.
+
+Eclipse ioFog provides an edge microservice platform with a ComSat networking component that can buffer data during disconnection and handle NAT traversal without VPN configuration [Eclipse Foundation, 2019]. It is more network-aware than standard Kubernetes distributions, but its offline capability is buffering and queuing, not self-sufficient operation. It still depends on a centralized Controller for microservice orchestration.
+
+The pattern across all of these systems is consistent and important. Each one treats network connectivity as the normal operating state. Offline behavior, where it exists at all, is a degraded mode — a temporary condition the system tolerates until connectivity is restored. None of them was designed with the premise that connectivity might never exist during a mission. None has been deployed in a real agricultural field and documented what broke.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Far-edge deployment capability comparison. \cmark~=~full support;
+\pmark~=~partial; \xmark~=~not supported; \namark~=~out of scope.
+OpenPASS extends K3s (vanilla) with solutions for all three far-edge
+deployment gaps identified at Stoutsville.}
+\label{tab:edge_capability_comparison}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{lXXXXX}
+\hline
+\textbf{System}
+  & \textbf{\makecell{Offline\\Pod\\Reconstruction}}
+  & \textbf{\makecell{Firewall-\\Tolerant\\CNI}}
+  & \textbf{\makecell{Single-Node\\Far-Edge\\Optimized}}
+  & \textbf{\makecell{No Cloud\\Control Plane}}
+  & \textbf{\makecell{Disconnected\\Field\\Validated}} \\
+\hline
+\textbf{OpenPASS} (ours)  & \cmark & \cmark & \cmark & \cmark & \cmark \\
+K3s (vanilla)             & \xmark & \xmark & \cmark & \cmark & \xmark \\
+\hline
+KubeEdge~\cite{xiong2018kubeedge}       & \pmark & \xmark & \xmark & \xmark & \namark \\
+OpenYurt~\cite{yakubov2025comparative}  & \pmark & \xmark & \xmark & \xmark & \namark \\
+MicroK8s                                & \xmark & \xmark & \pmark & \cmark & \namark \\
+Eclipse ioFog~\cite{iofog2019eclipse}   & \xmark & \pmark & \pmark & \pmark & \namark \\
+\hline
+\end{tabularx}
+\end{table}
+
+That gap in the literature is not a criticism of these systems. They were built for the environments their designers had in mind, and they work well in those environments. The gap is a research opportunity, and it is the one this chapter addresses.
+%% ============================================================
+\section{Stoutsville, Ohio: What the Lab Could Not Simulate}
+\label{sec:ch1_ip1}
+%% ============================================================
+The Stoutsville deployment had a clear mission objective: fly the drone over the soybean field, capture aerial imagery, transfer it to the field laptop, run the AI inference pipeline, generate orthomosaics, and produce a crop health analysis — all on-site, without any data leaving the farm.
+
+The lab had validated each component of this pipeline individually. The K3S cluster started correctly. The containers deployed. The inference pods ran. The orthomosaic engine produced output. Every integration test passed. The system was ready.
+
+The field disagreed.
+
+Three failures occurred, and each one revealed a different hidden assumption in the platform. None of them was caused by a bug in the application code. None of them was caused by a deficiency in the AI models. Each one was caused by a mismatch between what the infrastructure expected and what the environment provided.
+
+The field did not break the system randomly. It broke it in ways that were repeatable, predictable, and, in retrospect, diagnosable from first principles. That repeatability is the insight that drives the rest of this chapter.
+
+We define an \textbf{inflection point} as a moment in real-world far-edge deployment where site heterogeneity forces a platform-level intervention that the standard development pipeline did not require and did not anticipate. An inflection point is not a bug. It is a design blind spot, a place where the assumptions built into the platform stopped matching the conditions of the deployment site. The three inflection points encountered at Stoutsville are the primary subject of this chapter.
+%% ============================================================
+\section{Three Points Where Far-Edge AI Systems Break}
+\label{sec:ch1_ip2}
+%% ============================================================
+
+\subsection{The Network Was Never There}
+\label{subsec:ch1_ip2_problem}
+\textbf{What happened.} The agricultural site had enterprise network infrastructure. That infrastructure had a firewall. That firewall blocked the UDP port traffic that K3S's Flannel CNI plugin requires for pod-to-pod communication. Flannel, in its default configuration, binds to a physical network interface and uses VXLAN encapsulation over UDP port 8472 to route traffic between pods. When the enterprise firewall blocked that traffic, inter-pod communication collapsed entirely. No pods could talk to each other. The application, which depends on multiple containers coordinating through the cluster network, was completely non-functional.
+
+\textbf{This failure mode is not unique to one firewall policy.} It is a structural consequence of how Flannel resolves its physical network anchor. K3S's own documentation lists the requirement to open UDP port 8472 in any firewall present on the network. In a lab environment or cloud deployment, this is a one-time configuration step that developers perform once and forget. In a far-edge deployment where the network environment changes at every site, it means the cluster's ability to function depends on a negotiation with whoever administers the local network. That negotiation may fail. In Stoutsville, it did.
+
+\textbf{Why existing approaches did not cover this.} The K3S documentation acknowledges the firewall requirement but frames it as a setup step, not a deployment risk. KubeEdge and OpenYurt both require additional port configurations for their cloud-edge communication channels. None of these systems was designed for an environment where the physical network interface itself is unreliable or firewalled. The assumption is that a network exists and is configurable. At the far edge, neither assumption holds reliably.
+
+\textbf{The solution: VXLAN overlay on a virtual dummy interface.} The resolution decouples Flannel's network anchor from the physical network environment entirely. Three changes accomplish this.
+
+First, a virtual dummy network interface is created with a static IP address (dummy0, 10.0.0.1/24). This interface is not tied to any physical network card and is not subject to firewall policies on the physical network. It exists at the OS level regardless of what the site network looks like.
+
+Second, K3S is configured to bind Flannel to this interface rather than discovering a physical one:
+
+\begin{lstlisting}[language=bash, label={lst:helm_local}]
+--flannel-backend=vxlan
+--flannel-iface=dummy0
+\end{lstlisting}
+
+Third, all pod traffic is encapsulated through VXLAN, with a pod CIDR of 10.42.0.0/16 that remains consistent across every deployment site regardless of the physical network topology.
+
+The result is that OpenPASS's pod network is entirely self-contained. It does not depend on any physical network interface being available, configurable, or firewall-compliant. The same K3S configuration that works in the lab works in Stoutsville works at any future agricultural site. The network layer is now site-agnostic.
+
+\subsection{The Hardware Had Other Plans}
+\label{subsec:ch1_ip2_existing}
+\textbf{What happened.} A field laptop is not a cloud node. It has a fixed, constrained amount of RAM and CPU that it shares across the operating system, the K3S control plane, and every pod in the cluster. In the lab, the startup sequence of OpenPASS's pods was not a problem: containers initialized quickly on development hardware with headroom to spare.
+In Stoutsville, startup latency grew from the millisecond range to seconds. When multiple pods attempted to initialize simultaneously, the resource spike from their combined startup requirements exceeded what the edge laptop could supply. AI inference containers, which have larger initialization footprints than most workloads, crashed before completing their startup sequence. No inference, no orthomosaic, no output.
+
+This failure mode is invisible in development because development environments have excess resources. The problem only surfaces when the total resource demand of simultaneous pod startups exceeds the available capacity of a single constrained node, which is exactly the condition that far-edge deployment creates.
+
+\textbf{Why existing approaches did not cover this.} Standard Kubernetes scheduling assumes a multi-node cluster where pods can be distributed across nodes to balance load. K3S is single-node by design for far-edge use. Its default scheduler makes no accommodation for the startup spike pattern that occurs when a multi-container application launches on a resource-constrained host. Pod Disruption Budgets exist in Kubernetes as a mechanism for protecting availability during voluntary disruptions like node drains, but they are not applied by default to address startup contention.
+
+\textbf{The solution: adaptive scheduling with availability protection.} The response operates at two levels.
+
+At the scheduling level, pod startup sequencing is managed to prevent simultaneous resource spikes. Rather than allowing all containers to race to initialize at once, the startup order is orchestrated so that resource-intensive pods initialize with headroom available.
+
+At the availability level, Pod Disruption Budgets are applied to the AI inference pods, defining a minimum availability guarantee that K3S respects. This ensures that once an inference pod is running, K3S does not evict or restart it in ways that would violate the budget, even under memory pressure from other workloads. The inference pods are protected during active missions.
+
+The result is a predictable startup behavior on constrained hardware. The edge node operates within its resource envelope regardless of what else is running at startup.
+
+\subsection{No Registry, No Recovery}
+\label{subsec:ch1_ip2_solution}
+
+\textbf{What happened.} Agricultural fields at Stoutsville had zero network connectivity. This is not an edge case. It is the standard condition for a working farm field. The team had designed for local inference precisely because cloud access was not assumed. What had not been designed for was the behavior of K3S itself when connectivity was entirely absent.
+
+Containerized applications built on standard cloud-native tooling carry a hidden dependency: the assumption that container images can be pulled from an external registry. This assumption is built into the operational model of containerd, the container runtime embedded in K3S. When a pod needs to be reconstructed, whether from a crash, a restart, or a fresh deployment, containerd attempts to pull the required image. If no registry is reachable, the pull fails, and the pod cannot be reconstructed.
+
+In a lab or cloud environment, this failure mode never surfaces because registries are always reachable. In Stoutsville, it surfaced immediately. When pods crashed, they could not recover. When the team attempted a fresh deployment on-site, it failed. There was no recovery path available without connectivity. The application had no fallback, no on-node image cache, no way to rebuild itself from local resources.
+
+This is the most consequential of the three inflection points, because it is the one that makes far-edge deployment categorically different from near-edge or cloud deployment. The other two inflection points degrade performance. This one makes recovery impossible.
+
+\textbf{Why existing approaches did not cover this.} K3S supports private registry mirroring through a registries.yaml configuration file, which allows image pulls to be redirected to a local mirror. However, this requires a registry service to be running and reachable on the local network. It is a redirection mechanism, not an offline cache. If the local registry is not running or is not configured, K3S falls back to the external registry. In a fully disconnected environment with no local registry service, this provides no protection. OpenYurt and KubeEdge both inherit the same containerd-level dependency. None of the existing platforms solves the problem of container image availability under complete network disconnection without requiring an additional locally-running registry service that itself must be set up and maintained.
+
+\textbf{The solution: extended containerd with on-node image cache and local Helm repositories.} This is the core technical contribution of Chapter 3, and it addresses the problem at the right layer.
+
+Rather than relying on an external or locally-served registry at runtime, we extended K3S's embedded containerd component to serve a complete container image cache stored directly on the edge node. All images required by the OpenPASS application are pre-loaded into this cache before deployment. At runtime, containerd serves images from the local cache without any external network request. No registry pull is attempted. No network path is required.
+This is complemented by on-node Helm repository hosting. All Helm charts used by OpenPASS are stored and served from a local Git repository on the edge node itself. Helm operations that would normally resolve against external chart repositories resolve locally instead. The Helm Resource Manager coordinates pod rebuild sequences using only these local resources, identifying what is needed and reconstructing pods entirely from the on-node cache.
+
+The result is a system that can self-reconstruct from a complete state of zero running pods, with no external network connectivity, using only what is stored on the edge node. The far-edge node transitions from a relay point — an endpoint that depends on upstream infrastructure to function — into a self-sufficient compute platform. It does not degrade gracefully when connectivity is absent. It operates normally, because connectivity was never part of its runtime model.
+%% ============================================================
+\section{A Framework for Deployment Failures}
+\label{sec:ch1_ip3}
+%% ============================================================
+The three inflection points encountered at Stoutsville are not specific to OpenPASS, to soybean fields, or to Ohio. They are instances of a general failure class that will appear in any far-edge AI deployment where the system was developed under cloud-native assumptions. The trigger conditions differ by site. The failure modes are consistent.
+
+Table 3.1 formalizes this as a structured taxonomy. Each entry documents the trigger condition, the failure mode it produces, and the architectural resolution that addresses it. This structure is designed to be reusable: a practitioner deploying a different far-edge AI application on different hardware can consult this taxonomy, identify which inflection points apply to their context, and apply the corresponding architectural pattern without having to discover the failure in the field first.
+
+\begin{table}
+\centering
+\small
+\begin{tabularx}{\textwidth}{|X|X|X|X|}
+\hline
+\textbf{Inflection Point} & \textbf{Trigger Condition} & \textbf{Failure Mode} & \textbf{Architectural Resolution} \\
+\hline
+
+Network Environment Mismatch 
+& Enterprise firewall blocks Flannel CNI's physical interface binding; UDP port 8472 unavailable 
+& Complete pod-to-pod communication failure; application non-functional at startup 
+& VXLAN overlay on virtual \texttt{dummy0} interface; site-agnostic pod CIDR \texttt{10.42.0.0/16}; Flannel decoupled from physical network \\
+\hline
+
+Resource Contention at Startup 
+& Simultaneous pod initialization on constrained single-node edge hardware 
+& AI inference containers crash before completing initialization; no inference output 
+& Adaptive startup sequencing; Pod Disruption Budgets protecting inference pod availability \\
+\hline
+
+Runtime Registry Dependency 
+& Zero network connectivity at deployment site; containerd attempts external image pull on pod reconstruction 
+& Complete application breakdown; no on-site recovery path without connectivity 
+& Extended containerd with local image cache; on-node Helm repositories; Helm Resource Manager coordinating offline rebuild \\
+\hline
+
+\end{tabularx}
+\end{table}
+
+We further propose an inflection-point database as a community artifact: a structured, shared repository where far-edge AI practitioners can document deployment failure modes, their trigger conditions, and their resolutions. Each entry follows the structure of Table 3.1. The goal is to reduce the rediscovery cost that every team currently bears when they carry a lab-validated system into a new physical environment. This database does not yet exist as a community resource. We describe it here as a proposed contribution and invite the research community to build toward it.
+%% ============================================================
+\section{Validated Deployment and What It Demonstrated}
+\label{sec:ch1_taxonomy}
+%% ============================================================
+Following the resolution of all three inflection points, OpenPASS completed its mission at Stoutsville. The system deployed from on-node resources, established pod-to-pod connectivity through the VXLAN overlay, started its inference containers without resource contention failures, and operated through complete network disconnection without any loss of function. The drone flew, the imagery was captured, the orthomosaic was generated, and the crop health analysis was produced on-site.
+
+The architectural solutions validated at Stoutsville are not configurations written for one farm. They are a deployment pattern — a set of platform-level decisions that, taken together, make a K3S-based far-edge AI application resilient to the three most common categories of infrastructure failure in physical field environments. The VXLAN overlay works on any site with any firewall policy. The adaptive startup sequencing works on any constrained single-node hardware. The extended containerd offline cache works anywhere with zero connectivity. None of these solutions is specific to digital agriculture.
+
+That generality is the claim this thesis builds toward. Chapter 3 established the pattern reactively, by encountering failures and resolving them. The question that follows is whether the same design principles — applied proactively, before any failure, on completely different hardware and in a completely different domain — produce the same resilience. Chapter 4 answers that question.

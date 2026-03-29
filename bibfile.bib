@@ -1,0 +1,222 @@
+%% ============================================================
+%% references_ch1.bib
+%% BibTeX citations for Chapter 1: OpenPASS — Digital Agriculture
+%% All entries verified against primary sources (IEEE Xplore,
+%% MDPI, arXiv, official documentation).
+%% ============================================================
+
+
+%% -------------------------------------------------------
+%% 1. THESIS OWN PUBLICATION
+%% -------------------------------------------------------
+
+@inproceedings{patil2025poster,
+  author    = {Vedant Patil and Christopher Stewart},
+  title     = {Poster: Managing Heterogeneity in Far-Edge {AI}},
+  booktitle = {Proceedings of the Tenth {ACM/IEEE} Symposium on Edge Computing ({SEC} '25)},
+  year      = {2025},
+  pages     = {Article 41, 1--3},
+  doi       = {10.1145/3769102.3774383},
+  publisher = {ACM},
+  note      = {Article 41}
+}
+
+
+%% -------------------------------------------------------
+%% 2. EDGE ORCHESTRATION SYSTEMS
+%% -------------------------------------------------------
+
+@inproceedings{xiong2018kubeedge,
+  author    = {Ying Xiong and Yulin Sun and Li Xing and Ying Huang},
+  title     = {Extend Cloud to Edge with {KubeEdge}},
+  booktitle = {2018 {IEEE/ACM} Symposium on Edge Computing ({SEC})},
+  year      = {2018},
+  pages     = {373--377},
+  address   = {Bellevue, WA, USA},
+  doi       = {10.1109/SEC.2018.00048},
+  publisher = {IEEE}
+}
+
+%% Performance evaluation: K3s, KubeEdge, ioFog on real edge hardware
+%% Primary empirical source for Section 3.2 orchestration comparison
+@article{cilic2023performance,
+  author    = {Ivan {\v{C}}ili{\'{c}} and Pavle Krivi{\'{c}} and Ivana {Podnar {\v{Z}}arko} and Mario Ku{\v{s}}ek},
+  title     = {Performance Evaluation of Container Orchestration Tools in Edge Computing Environments},
+  journal   = {Sensors},
+  volume    = {23},
+  number    = {8},
+  pages     = {4008},
+  year      = {2023},
+  doi       = {10.3390/s23084008},
+  publisher = {MDPI}
+}
+
+%% Cloud-native workload orchestration review: K3s, KubeEdge, ioFog architectural survey
+%% Source for K3s and ioFog architectural characterization
+@article{buinevich2023cloudnative,
+  author    = {Mikel Serón Esnal and Javier Del Ser and others},
+  title     = {Cloud-Native Workload Orchestration at the Edge: {A} Deployment Review and Future Directions},
+  journal   = {Sensors},
+  volume    = {23},
+  number    = {4},
+  pages     = {2215},
+  year      = {2023},
+  doi       = {10.3390/s23042215},
+  publisher = {MDPI}
+}
+
+%% Comparative empirical analysis: k3s, KubeEdge, OpenYurt, k0s on Intel NUC + Raspberry Pi
+%% Primary source for OpenYurt characterization and cross-distribution comparison
+@inproceedings{yakubov2025comparative,
+  author    = {Diyaz Yakubov and David H{\"{a}}stbacka},
+  title     = {Comparative Analysis of Lightweight {Kubernetes} Distributions for Edge Computing: Performance and Resource Efficiency},
+  booktitle = {Lecture Notes in Computer Science},
+  year      = {2025},
+  doi       = {10.1007/978-3-031-84617-5_7},
+  publisher = {Springer},
+  note      = {arXiv:2504.03656}
+}
+
+%% K3s official documentation — firewall requirements, Flannel CNI, registry mirroring
+@misc{k3sdocs2024,
+  author       = {{Cloud Native Computing Foundation}},
+  title        = {{K3s} --- Lightweight {Kubernetes}: Installation Requirements},
+  year         = {2024},
+  howpublished = {\url{https://docs.k3s.io/installation/requirements}},
+  note         = {Accessed: 2025}
+}
+
+%% K3s official documentation — networking and Flannel configuration
+@misc{k3snetworking2024,
+  author       = {{Cloud Native Computing Foundation}},
+  title        = {{K3s} --- Basic Network Options},
+  year         = {2024},
+  howpublished = {\url{https://docs.k3s.io/networking/basic-network-options}},
+  note         = {Accessed: 2025}
+}
+
+%% Eclipse ioFog — official Eclipse Foundation project
+@misc{iofog2019eclipse,
+  author       = {{Eclipse Foundation}},
+  title        = {Eclipse {ioFog}: Real World Patterns for the Edge},
+  year         = {2019},
+  howpublished = {\url{https://www.eclipse.org/community/eclipse\_newsletter/2019/january/edge.php}},
+  note         = {Accessed: 2025}
+}
+
+
+%% -------------------------------------------------------
+%% 3. DIGITAL AGRICULTURE AND UAV AI
+%% -------------------------------------------------------
+
+%% Systematic review: UAV + AI integration for disease detection,
+%% weed management, pest control in precision agriculture
+@article{anam2024uav,
+  author    = {I. Anam and others},
+  title     = {A systematic review of {UAV} and {AI} integration for targeted disease detection, weed management, and pest control in precision agriculture},
+  journal   = {Smart Agricultural Technology},
+  volume    = {9},
+  pages     = {100647},
+  year      = {2024},
+  doi       = {10.1016/j.atech.2024.100647},
+  publisher = {Elsevier}
+}
+
+%% Cloud-edge-device collaborative computing in smart agriculture
+%% Establishes the three-tier architectural model and its limitations
+@article{gu2025cloudedge,
+  author    = {H. Gu and others},
+  title     = {Cloud--edge--device collaborative computing in smart agriculture: architectures, applications, and future perspectives},
+  journal   = {Frontiers in Plant Science},
+  year      = {2025},
+  doi       = {10.3389/fpls.2025.1540588},
+  publisher = {Frontiers Media},
+  note      = {PMC Article}
+}
+
+%% Transforming farming: UAV + AI + ML review
+%% Establishes UAVs as central to precision agriculture sensing
+@article{habib2024transforming,
+  author    = {M.A. Habib and others},
+  title     = {Transforming Farming: {A} Review of {AI}-Powered {UAV} Technologies in Precision Agriculture},
+  journal   = {Drones},
+  volume    = {8},
+  number    = {11},
+  pages     = {664},
+  year      = {2024},
+  doi       = {10.3390/drones8110664},
+  publisher = {MDPI}
+}
+
+
+%% -------------------------------------------------------
+%% 4. SMARTWILDS DATASET PUBLICATION
+%% -------------------------------------------------------
+
+@inproceedings{kline2025smartwilds,
+  author    = {Jenna Marie Kline and Anirudh Potlapally and Vedant Yuvraj Patil and
+               Rugved Katole and Tanishka Wani and Penelope Covey and Samuel Stevens and
+               Hari Subramoni and Tanya Berger-Wolf and Christopher Stewart},
+  title     = {{SmartWilds}: Multimodal Wildlife Monitoring Dataset},
+  booktitle = {{NeurIPS} 2025 Workshop for Imageomics: Discovering Biological Knowledge
+               from Images Using {AI}},
+  year      = {2025}
+}
+
+%% -------------------------------------------------------
+%% 5. CHAPTER 3 — ANIMAL ECOLOGY CITATIONS
+%% -------------------------------------------------------
+
+%% WildWings primary paper — published Methods in Ecology and Evolution
+@article{kline2025wildwing,
+  author    = {Jenna Marie Kline and Alison Zhong and Kevyn Irizarry and
+               Charles V. Stewart and Christopher Stewart and
+               Daniel I. Rubenstein and Tanya Berger-Wolf},
+  title     = {{WildWing}: An open-source, autonomous and affordable {UAS}
+               for animal behaviour video monitoring},
+  journal   = {Methods in Ecology and Evolution},
+  volume    = {17},
+  pages     = {291--300},
+  year      = {2026},
+  doi       = {10.1111/2041-210x.70018},
+  publisher = {Wiley}
+}
+
+%% Drone-based wildlife detection synthesis
+@article{corcoran2021automated,
+  author    = {Evangeline Corcoran and others},
+  title     = {Automated detection of wildlife using drones: Synthesis,
+               opportunities and constraints},
+  journal   = {Methods in Ecology and Evolution},
+  volume    = {12},
+  pages     = {1103--1114},
+  year      = {2021},
+  doi       = {10.1111/2041-210X.13581},
+  publisher = {Wiley}
+}
+
+%% WAID large-scale wildlife aerial dataset — YOLO comparison
+@article{waid2023dataset,
+  author    = {Dong An and others},
+  title     = {{WAID}: A Large-Scale Dataset for Wildlife Detection with Drones},
+  journal   = {Applied Sciences},
+  volume    = {13},
+  number    = {18},
+  pages     = {10397},
+  year      = {2023},
+  doi       = {10.3390/app131810397},
+  publisher = {MDPI}
+}
+
+%% Edge AI camera trap integration — Raspberry Pi deployment
+@article{velascomontero2024reliable,
+  author    = {D. Velasco-Montero and others},
+  title     = {Reliable and efficient integration of {AI} into camera traps
+               for smart wildlife monitoring based on continual learning},
+  journal   = {Ecological Informatics},
+  volume    = {83},
+  pages     = {102815},
+  year      = {2024},
+  doi       = {10.1016/j.ecoinf.2024.102815},
+  publisher = {Elsevier}
+}
