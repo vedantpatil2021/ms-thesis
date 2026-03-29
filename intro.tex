@@ -41,7 +41,7 @@ The systems literature has largely not engaged with this. Most edge AI research 
 \section{Two Deployments, One Argument}
 \label{sec:two_deploy_one_arg}
 %% ============================================================
-This thesis is grounded in two real field deployments, not laboratory simulations. The first, a containerized agricultural AI system called OpenPASS, was carried to a soybean farm in Stoutsville, Ohio. It failed in ways that were invisible during development. Those failures were analyzed, classified, and resolved through architectural changes. The second, a wildlife monitoring system called the Smart Backpack, was deployed at The Wilds Conservation Center in southeastern Ohio. It was built with the lessons of the first deployment in mind, on different hardware, using a different orchestration framework, in a completely different application domain. It worked.
+This thesis is grounded in two real field deployments, not laboratory simulations. The first, a containerized agricultural AI system called OpenPASS, was carried to a soybean farm in Stoutsville, Ohio. It failed in ways that were invisible during development. Those failures were analyzed, classified, and resolved through architectural changes. The second, a wildlife monitoring system called the Smart Backpack, was built from lessons drawn from fieldwork at The Wilds Conservation Center in southeastern Ohio and validated at Tuttle Park near The Ohio State University campus in Columbus. It was designed with the lessons of the first deployment in mind, on different hardware, using a different orchestration framework, in a completely different application domain. It worked.
 
 The relationship between the two deployments is not coincidental. Chapter 3 documents what broke and why. Chapter 4 shows the same design principles applied proactively, before anything broke. The consistency of the outcome across two domains, two hardware platforms, and two orchestration frameworks is the thesis's central empirical claim.
 %% ============================================================
@@ -54,31 +54,38 @@ This claim is validated through two field deployments.
 
 The first is OpenPASS, an agricultural AI system carried to a soybean farm in Stoutsville, Ohio. The initial deployment failed. The failures were analyzed, classified as inflection points, and resolved through architectural changes. The result is a validated offline-first deployment pattern for far-edge K3S applications.
 
-The second is the Smart Backpack system, deployed at The Wilds Conservation Center in southeastern Ohio. This system applied offline-first principles from the beginning of design, before the first line of code was written, on a Raspberry Pi 4B using Docker Compose rather than Kubernetes. Over a 20-hour field deployment it completed 38 autonomous drone missions triggered by camera trap events, with no human involvement in dispatch and no external network dependency during operation.
+The second is the Smart Backpack system, motivated by fieldwork at The Wilds Conservation Center in southeastern Ohio and validated at Tuttle Park near The Ohio State University campus. This system applied offline-first principles from the beginning of design, before the first line of code was written, on a Raspberry Pi 4B using Docker Compose rather than Kubernetes. Over a 20-hour validation deployment it completed 38 autonomous drone missions triggered by camera trap events, with no human involvement in dispatch and no external network dependency during operation.
 
 Same principles. Different stack. Different domain. Same outcome.
 %% ============================================================
 \section{Contributions}
 \label{sec:contribution}
 %% ============================================================
-Inflection-point classification framework.
+\textbf{Inflection-point classification framework.}
 We introduce the inflection point as a formal concept for far-edge deployment analysis: a site-induced, platform-level failure mode that is distinct from application bugs and requires an architectural response. Three inflection points from the OpenPASS agricultural deployment are characterized, each with its triggering condition, failure mode, and architectural resolution documented.
-Offline-first K3S architecture.
+
+\textbf{Offline-first K3S architecture.}
 We designed and implemented an offline-first deployment architecture for far-edge K3S applications. Three components address the three inflection points: a VXLAN-based overlay that makes pod networking independent of physical network interfaces at a site; pod scheduling with Pod Disruption Budgets that protects inference containers from eviction under resource pressure; and an extended containerd configuration with on-node Helm repositories that reconstructs the full application stack without any external registry access. This architecture was validated at a real agricultural field site.
-OpenPassLite.
+
+\textbf{OpenPassLite.}
 We designed and implemented a modular drone mission framework built on the Parrot Olympe SDK. Its architecture centers on drop-in mission modules: each flight behavior is a self-contained Python file that the framework loads without modification to its core. Missions for autonomous GPS navigation, orthomosaic survey capture, and return-to-home are implemented and validated in two separate field deployments across two application domains.
-SmartFields.
+
+\textbf{SmartFields.}
 We designed and implemented a fault-tolerant pipeline orchestrator that coordinates the full detection-to-documentation pipeline in the wildlife monitoring deployment. SmartFields receives camera trap events via MQTT, resolves GPS coordinates, dispatches a three-stage drone mission through OpenPassLite, monitors stage completion through log inspection, and enforces fault-tolerance rules that prioritize drone safety when a stage fails. A threading lock enforces single-mission execution at all times.
-Proposed inflection-point database.
+
+\textbf{Proposed inflection-point database.}
 We propose a structured community repository for documenting far-edge deployment failure modes, their causes, and their architectural resolutions. This artifact does not exist yet; we describe its design and make the case for it as a community infrastructure investment.
-Cross-domain validation.
-Offline-first design principles were independently applied in two field environments using two orchestration frameworks, two hardware architectures, and two application domains. The 38-mission, 92% success-rate result at The Wilds, achieved with zero network dependency and zero human intervention in dispatch, provides the cross-domain evidence that these principles are not K3S-specific or agriculture-specific. They are a generalizable design approach.
+
+\textbf{Cross-domain validation.}
+Offline-first design principles were independently applied in two field environments using two orchestration frameworks, two hardware architectures, and two application domains. The 38-mission, 92\% success-rate result at Tuttle Park, achieved with zero network dependency and zero human intervention in dispatch, provides the cross-domain evidence that these principles are not K3S-specific or agriculture-specific. They are a generalizable design approach.
 %% ============================================================
 \section{Thesis Organization}
 \label{sec:thesis_org}
 %% ============================================================
 Chapter 2 surveys related work across edge computing systems, container orchestration for constrained hardware, digital agriculture, and wildlife monitoring. It locates this thesis within the existing literature and identifies the gaps that motivate the work.
+
 Chapter 3 presents the OpenPASS agricultural system. It describes the Stoutsville, Ohio deployment context, develops the inflection-point classification framework, presents the three inflection points and their architectural resolutions, and reports the results of the offline-first K3S deployment.
-Chapter 4 presents the Smart Backpack wildlife monitoring system. It describes the SmartWilds project context, the eight-container Docker Compose architecture, the design of OpenPassLite and SmartFields, and the field validation results from The Wilds Conservation Center.
-Chapter 5 draws both chapters into a unified analysis. It traces how the design principles developed in Chapter 3 appear in the architecture of Chapter 4, examines what that cross-domain consistency implies, and presents the proposed inflection-point database.
-Chapter 6 states contributions, discusses limitations, and identifies open problems.
+
+Chapter 4 presents the Smart Backpack wildlife monitoring system. It describes the SmartWilds project context and the motivation drawn from The Wilds Conservation Center, the eight-container Docker Compose architecture, the design of OpenPassLite and SmartFields, and the field validation results from Tuttle Park near The Ohio State University campus.
+
+Chapter 5 states contributions, discusses limitations, and identifies open problems.
