@@ -1,23 +1,12 @@
 %  The dissertation abstract can only be 500 words.
 
-This is the abstract of the thesis and shows how the world's problems
-can be solved by having a cow.
+Far-edge AI systems operate at the physical location of a sensing event, on hardware that is resource-constrained, frequently disconnected, and never in the same environment twice. The tools used to build these systems, container orchestration frameworks, image registries, cloud-native networking, were designed under the assumption that external infrastructure is always reachable. When that assumption meets a soybean field with no internet access or a wildlife conservation site with no cellular coverage, it does not degrade gracefully. It fails completely, before a single inference is ever attempted, and it does so in ways that lab testing cannot reveal.
 
-New 2010 version:
-\begin{quote}
-In reality, after you have actually had a cow, and written it up as
-your dissertation, remember that the dissertation or thesis abstract should be
-less than 500 words. There is no requirement for an external abstract,
-but an environment exists for it if this changes back. See the old
-instructions below for details.
-\end{quote}
+This thesis argues that far-edge AI deployment failures are not accidental. They are systematic, traceable to specific mismatches between what the platform assumes and what the deployment site provides, and addressable through a deliberate design philosophy we call offline-first: treating external network connectivity as unavailable from the start of system design rather than as a resource to degrade gracefully from when lost.
 
-Old 1996 version:
-\begin{quote}
-In reality, after you have actually had a cow, and written it up as
-your dissertation, remember that the dissertation or thesis abstract should be
-less than 350 words.  Two copies of the external version of the abstract
-must be submitted separately to the Graduate School.  The environment {\tt
-externalabstract} can be used to generate the required external abstract pages.
-\end{quote}
+The argument is grounded in two real field deployments. The first is OpenPASS, a containerized aerial AI system for precision agriculture deployed at a soybean farm in Stoutsville, Ohio. The system arrived at the field having passed every lab test and failed in three distinct ways within hours. Enterprise firewalls blocked pod-to-pod communication inside the K3S cluster. Resource contention during startup on the constrained edge laptop crashed the AI inference containers before they completed initialization. Zero network connectivity made container reconstruction impossible when pods failed. We classify each failure as an inflection point: a site-induced, platform-level failure mode that the standard development pipeline does not expose and does not anticipate. For each inflection point we document the trigger condition, the failure mode, and the architectural resolution. The resolutions, VXLAN overlay networking on a virtual dummy interface, adaptive pod scheduling with availability protection, and extended containerd with a complete on-node image cache and local Helm repositories, together constitute an offline-first K3S deployment architecture that eliminates all runtime dependencies on external infrastructure.
+
+The second deployment is the Smart Backpack, an autonomous wildlife monitoring system built on a Raspberry Pi 4B using Docker Compose, designed to close the detection-to-aerial-observation loop between camera traps and a drone without human intervention at the dispatch decision point. The system was designed offline-first from the beginning, drawing on the architectural principles that the Stoutsville deployment had forced into existence. Validated at Tuttle Park near The Ohio State University campus, the Smart Backpack completed 38 autonomous drone missions over 20 continuous hours of operation with a 92 percent mission success rate and zero external network calls at runtime.
+
+The two deployments differ in nearly every dimension: application domain, hardware platform, orchestration framework, and field site. The offline-first principle held in both. This consistency is the thesis's primary empirical contribution. We further propose a community inflection-point database as a structured artifact for sharing far-edge deployment failure modes across research teams, reducing the cost of rediscovery that every practitioner currently bears when carrying a lab-validated system into a new physical environment.
 
