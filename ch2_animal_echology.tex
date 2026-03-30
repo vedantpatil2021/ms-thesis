@@ -79,11 +79,81 @@ The Smart Backpack runs eight containerized services on the Raspberry Pi 4B, all
 
 Table 4.1 lists all eight services, their ports, ownership, and roles.
 
+\begin{table}
+\centering
+\caption{All eight services, their ports, ownership, and roles}
+\small
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{l l l X}
+\hline
+\textbf{Service} & \textbf{Port} & \textbf{Owner} & \textbf{Role} \\
+\hline
+
+MQTT Broker (Mosquitto)
+& 1883
+& Infrastructure
+& Local pub/sub event routing \\
+\hline
+
+MQTT Subscriber
+& --
+& External
+& Routes detection events; resolves topic to GPS \\
+\hline
+
+SmartFields
+& 2188
+& This work
+& Pipeline orchestrator; three-stage mission control \\
+\hline
+
+OpenPassLite
+& 2177
+& This work
+& Drone mission framework; flight control \\
+\hline
+
+WildWings
+& 2199
+& External \cite{kline2025wildwing}
+& AI-guided aerial tracking \\
+\hline
+
+Loki
+& 3100
+& Infrastructure
+& Log aggregation \\
+\hline
+
+Promtail
+& --
+& Infrastructure
+& Log scraping \\
+\hline
+
+Grafana
+& 3000
+& Infrastructure
+& Real-time monitoring dashboard \\
+\hline
+
+\end{tabularx}
+\end{table}
+
 The three services that constitute my direct contribution are the MQTT Subscriber, SmartFields, and OpenPassLite. WildWings is an external component developed by a collaborating lab and integrated into the pipeline through SmartFields. Attribution in the table reflects this boundary explicitly.
 
 \subsection{MQTT Subscriber}
 \label{subsec:ch4_ltt}
 The MQTT Subscriber bridges ground-level detection events to the pipeline orchestrator. It subscribes to camera trap topics on the local Mosquitto broker at QoS 1, which guarantees at-least-once delivery even under brief disconnections. When an event arrives, it looks up the camera trap's GPS coordinates from a configuration file and forwards them to SmartFields via HTTP POST.
+
+\begin{center}
+    \begin{lstlisting}[language=python]
+    [mqtt_topics."cameratrap/events"]
+    lat  = 40.008278960212
+    lon  = -83.0175149068236
+    camid = "pi-001"
+    \end{lstlisting}
+\end{center}
 
 The GPS mapping architecture deserves a note. Camera traps are stationary; their coordinates are fixed at deployment time. By encoding the topic-to-GPS mapping in a configuration file rather than requiring GPS hardware on each camera trap, the system eliminates a hardware dependency from every sensor in the network. Adding a new camera trap requires a single new line in the configuration file. No code changes, no redeployment.
 
@@ -122,6 +192,13 @@ The same OpenPassLite framework was used for orthomosaic survey flights in the O
 The Smart Backpack was validated at Tuttle Park near The Ohio State University campus during a continuous 20-hour operational period in summer 2025. The site provided open space suitable for drone operations and reliable GPS coverage. A person served as the proxy detection subject throughout the deployment, triggering camera trap events that the pipeline treated identically to how it would treat animal detections in a conservation site. The pipeline is subject-agnostic: what the camera trap sends is a confidence-thresholded MQTT event with GPS coordinates. What SmartFields dispatches in response is a three-stage drone mission. The nature of what triggered the detection does not change the pipeline's behavior or the validity of testing it.
 
 Campus WiFi and a personal hotspot were available at the site during the deployment. The Smart Backpack used neither. Every service in the pipeline communicates on localhost. Images are served from the on-node Docker cache. The drone communicates over USB. The MQTT broker is local. At no point in any of the 38 mission cycles did any system component make an external network call. The offline-first design was not tested by forcing a disconnected environment at Tuttle Park. It was demonstrated by the fact that connectivity was irrelevant to the system's operation.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/smartfield.jpg}
+    \caption{Smartfield's Field Setup at Tuttle Park}
+    \label{fig:fieldvalidation}
+\end{figure}
 
 Over the 20-hour deployment, the system processed 45 detection events in total. Of these, 41 resulted in a dispatch attempt; the remaining 4 events arrived while a mission was already in progress and were correctly rejected by the concurrency lock. Of the 41 attempts, 38 completed as full autonomous mission cycles, yielding a mission success rate of 92.7\%. No human intervention was required at the dispatch decision point for any mission. These figures are derived from post-deployment log file review and are reported here as field estimates consistent with direct observation during the deployment.
 

@@ -42,7 +42,8 @@ The pattern across all of these systems is consistent and important. Each one tr
 \begin{table}[htbp]
 \centering
 \small
-\caption{Far-edge deployment capability comparison. \cmark~=~full support;
+\cmark~=~full support;
+\caption{Far-edge deployment capability comparison.}
 \pmark~=~partial; \xmark~=~not supported; \namark~=~out of scope.
 OpenPASS extends K3s (vanilla) with solutions for all three far-edge
 deployment gaps identified at Stoutsville.}
@@ -105,12 +106,24 @@ This failure mode is not unique to one firewall policy. It is a structural conse
 
 Three changes implement this. First, a virtual dummy interface is created with a static IP address (dummy0, 10.0.0.1/24). Second, K3S is configured to bind Flannel to this interface:
 
-\begin{lstlisting}[language=bash]
---flannel-backend=vxlan
---flannel-iface=dummy0
-\end{lstlisting}
+\begin{center}
+    \begin{lstlisting}[language=bash]
+    --flannel-backend=vxlan
+    --flannel-iface=dummy0
+    \end{lstlisting}
+\end{center}
 
 Third, all pod traffic is encapsulated through VXLAN with a pod CIDR of 10.42.0.0/16 that remains consistent across every deployment site regardless of the physical network topology.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/inflection1.png}
+    \caption{Inflection Point 1 resolution: Flannel CNI anchored to a virtual
+\texttt{dummy0} interface rather than a physical network interface, decoupling
+the K3s pod network from site firewall policies and producing a
+site-agnostic VXLAN overlay (Pod CIDR 10.42.0.0/16).}
+    \label{fig:placeholder}
+\end{figure}
 
 The result is a pod network that is entirely self-contained and site-agnostic. The same K3S configuration that works in the lab works at Stoutsville and at any future agricultural site, regardless of local firewall policy.
 
@@ -128,6 +141,16 @@ This failure mode is invisible in development because development environments h
 
 At the initialization level, the crash-at-init failure is addressed through controlled pod startup sequencing. Rather than allowing all containers to race to initialize simultaneously, pods are sequenced using Kubernetes init containers and explicit resource requests. Init containers enforce an ordered startup dependency graph: resource-intensive pods do not begin initialization until their upstream dependencies have successfully started and released their initialization memory spike. Resource requests are configured explicitly for each pod so that the K3S scheduler has accurate information about each workload's startup footprint and can avoid overcommitting the node's capacity at any moment.
 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/inflection2.png}
+    \caption{Inflection Point 2 resolution: a Smart Pod Scheduler coordinates
+adjustable resource allocation and Pod Disruption Budgets to contain startup
+resource contention on constrained single-node far-edge hardware, enabling
+autonomous pod network operation.}
+    \label{fig:placeholder}
+\end{figure}
+
 At the availability level, Pod Disruption Budgets are applied to the AI inference pods once they have entered a running state. PDBs are a Kubernetes mechanism for protecting already-running pods from voluntary disruptions such as node drains or administrator-initiated evictions. In the OpenPASS deployment, PDBs ensure that a running inference pod cannot be voluntarily evicted to free resources for other workloads during an active mission. These two mechanisms are complementary and target distinct failure modes: init container sequencing prevents crash-at-init; PDBs protect running inference pods from subsequent voluntary eviction.
 
 The result is predictable startup behavior on constrained hardware. The edge node operates within its resource envelope at initialization, and inference pods are protected from eviction once running.
@@ -138,6 +161,16 @@ The result is predictable startup behavior on constrained hardware. The edge nod
 \textbf{What happened.} Agricultural fields at Stoutsville had zero network connectivity. This is not an edge case. It is the standard condition for a working farm field. The team had designed for local inference precisely because cloud access was not assumed. What had not been designed for was the behavior of K3S itself when connectivity was entirely absent.
 
 Containerized applications built on standard cloud-native tooling carry a hidden dependency: the assumption that container images can be pulled from an external registry. This assumption is built into the operational model of containerd, the container runtime embedded in K3S. When a pod needs to be reconstructed, whether from a crash, a restart, or a fresh deployment, containerd attempts to pull the required image. If no registry is reachable, the pull fails, and the pod cannot be reconstructed.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/inflection3.png}
+    \caption{Inflection Point 3 resolution: air-gapped container image caches
+and on-node Helm repositories enable self-sufficient pod reconstruction
+under complete network disconnection, with the Helm Resource Manager
+coordinating on-demand deployment without any external dependencies.}
+    \label{fig:placeholder}
+\end{figure}
 
 In a lab or cloud environment, this failure mode never surfaces because registries are always reachable. In Stoutsville, it surfaced immediately. When pods crashed, they could not recover. When the team attempted a fresh deployment on-site, it failed. There was no recovery path without connectivity. This is the most consequential of the three inflection points because it makes far-edge deployment categorically different from near-edge or cloud deployment. The other two inflection points degrade performance. This one makes recovery impossible.
 
