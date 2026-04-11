@@ -15,7 +15,7 @@ Digital agriculture has a timing problem. Crop stress, pest infestation, and nut
 
 This constraint drives a straightforward architectural requirement: inference must happen at the field edge, on the hardware that made the flight, without a cloud round-trip. The UAV captures imagery, the edge node processes it, and the farmer receives crop health analysis before the mission ends. No external network is required, and none should be assumed.
 
-OpenPASS, the Open Precision Agriculture Sensing System, was built to satisfy exactly this requirement. It is a containerized AI application running on K3S, a lightweight single-binary Kubernetes distribution, that performs crop health inference on drone-captured aerial imagery entirely at the field edge. The edge node is a standard x86\_64 field laptop. The drone is a UAV platform capturing high-resolution aerial imagery. The pipeline moves from flight to orthomosaic to crop health analysis without touching external infrastructure. The intelligence is at the field level. That was the design intent.
+OpenPASS, was built to satisfy exactly this requirement. It is a containerized AI application running on K3S, a lightweight single-binary Kubernetes distribution, that performs crop health inference on drone-captured aerial imagery entirely at the field edge. The edge node is a standard x86\_64 field laptop. The drone is a UAV platform capturing high-resolution aerial imagery. The pipeline moves from flight to orthomosaic to crop health analysis without touching external infrastructure. The intelligence is at the field level. That was the design intent.
 
 What the design intent did not account for was the field itself. The first real-world deployment of OpenPASS outside a controlled lab environment took place at a soybean farm in Stoutsville, Ohio, in summer 2025. The system that had been tested extensively in the lab, where infrastructure assumptions went unquestioned, met a physical environment that honored none of them. The deployment did not fail once, in one way, for one reason. It failed three times, in three distinct ways, each tracing back to a different assumption the platform had made about the world it would operate in.
 
@@ -117,7 +117,7 @@ Third, all pod traffic is encapsulated through VXLAN with a pod CIDR of 10.42.0.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\linewidth]{images/inflection1.png}
+    \includegraphics[width=0.75\linewidth]{images/inflection1.png}
     \caption{Inflection Point 1 resolution: Flannel CNI anchored to a virtual
 \texttt{dummy0} interface rather than a physical network interface, decoupling
 the K3s pod network from site firewall policies and producing a
@@ -143,7 +143,7 @@ At the initialization level, the crash-at-init failure is addressed through cont
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\linewidth]{images/inflection2.png}
+    \includegraphics[width=0.75\linewidth]{images/inflection2.png}
     \caption{Inflection Point 2 resolution: a Smart Pod Scheduler coordinates
 adjustable resource allocation and Pod Disruption Budgets to contain startup
 resource contention on constrained single-node far-edge hardware, enabling
@@ -164,7 +164,7 @@ Containerized applications built on standard cloud-native tooling carry a hidden
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\linewidth]{images/inflection3.png}
+    \includegraphics[width=0.75\linewidth]{images/inflection3.png}
     \caption{Inflection Point 3 resolution: air-gapped container image caches
 and on-node Helm repositories enable self-sufficient pod reconstruction
 under complete network disconnection, with the Helm Resource Manager
@@ -183,7 +183,7 @@ All container images required by the OpenPASS application are pre-populated into
 
 This is complemented by on-node Helm repository hosting. All Helm charts used by OpenPASS are stored in a local Git repository on the edge node. Helm operations resolve locally rather than against external chart repositories. The Helm Resource Manager coordinates pod rebuild sequences using only these local resources, reconstructing the full application stack from on-node storage alone.
 
-The air-gapped deployment pattern itself is not new; the K3S documentation describes it for environments without internet access. The contribution of this work is recognizing that air-gapped pre-population is a necessary and non-negotiable component of any offline-first far-edge K3S deployment, and integrating it into a systematic offline-first deployment pattern alongside the VXLAN overlay and startup sequencing solutions.
+The contribution of this work is recognizing that air-gapped pre-population is a necessary and non-negotiable component of any offline-first far-edge K3S deployment, and integrating it into a systematic offline-first deployment pattern alongside the VXLAN overlay and startup sequencing solutions.
 
 The result is a system that self-reconstructs from a complete state of zero running pods, with no external network connectivity, using only what was loaded onto the node before deployment.
 
