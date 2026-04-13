@@ -37,6 +37,8 @@ MicroK8s is a single-node Kubernetes distribution from Canonical aimed at develo
 
 Eclipse ioFog provides an edge microservice platform with a ComSat networking component that can buffer data during disconnection and handle NAT traversal without VPN configuration \cite{iofog2019eclipse}. It is more network-aware than standard Kubernetes distributions, but its offline capability is buffering and queuing, not self-sufficient operation. It still depends on a centralized Controller for microservice orchestration.
 
+Boubin et al. characterize the resource management constraints that arise when AI inference and flight control compete for compute on fully autonomous aerial systems at the edge, establishing that co-locating these workloads on a single constrained node produces resource contention and scheduling failures that standard cloud-oriented orchestration platforms do not address \cite{boubin2019managing}.
+
 The pattern across all of these systems is consistent and important. Each one treats network connectivity as the normal operating state. Offline behavior, where it exists at all, is a degraded mode, a temporary condition the system tolerates until connectivity is restored. None of them was designed with the premise that connectivity might never exist during a mission. None has been deployed in a real agricultural field and documented what broke.
 
 \begin{table}[htbp]
@@ -81,7 +83,7 @@ Three failures occurred, and each one revealed a different hidden assumption in 
 
 The field did not break the system randomly. It broke it in ways that were repeatable, predictable, and, in retrospect, diagnosable from first principles. That repeatability is the insight that drives the rest of this chapter.
 
-We define an \textbf{inflection point} as a moment in real-world far-edge deployment where site heterogeneity forces a platform-level intervention that the standard development pipeline did not require and did not anticipate. An inflection point is not a bug. It is a design blind spot, a place where the assumptions built into the platform stopped matching the conditions of the deployment site. The three inflection points encountered at Stoutsville are the primary subject of this chapter.
+We define an \textbf{inflection point} as a moment in real-world far-edge deployment where site heterogeneity forces a platform-level intervention that the standard development pipeline did not require and did not anticipate. An inflection point is not a bug. It is a design blind spot, a place where the assumptions built into the platform stopped matching the conditions of the deployment site. The three inflection points encountered at Stoutsville are the primary subject of this chapter. Prior work on in-situ model checking for UAVs by Taylor et al. establishes the technical precedent for runtime verification of platform assumptions in aerial systems, demonstrating that assumption violations can be detected and acted upon during flight without requiring ground-side connectivity \cite{taylor2021avis}. The inflection-point framework proposed here applies an analogous diagnostic lens to the pre-deployment and deployment phases of the platform lifecycle.
 
 %% ============================================================
 \section{Three Points Where Far-Edge AI Systems Break}
