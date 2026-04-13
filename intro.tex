@@ -61,21 +61,22 @@ Same principles. Different stack. Different domain. Results consistent with the 
 \section{Contributions}
 \label{sec:contribution}
 %% ============================================================
-Inflection-point classification framework.
-We introduce the inflection point as a formal concept for far-edge deployment analysis: a site-induced, platform-level failure mode that is distinct from application bugs and requires an architectural response. Three inflection points from the OpenPASS agricultural deployment are characterized, each with its triggering condition, failure mode, and architectural resolution documented.
+\textbf{Inflection-point classification framework.}
+We introduce the inflection point as a formal concept in far-edge deployment analysis: a site-induced, platform-level failure mode that is separate from application bugs and requires an architectural response. Three inflection points from the OpenPASS agricultural deployment are documented, each with its triggering condition, failure mode, and architectural resolution described.
 
 \textbf{Offline-first K3S architecture.}
-We designed and implemented an offline-first deployment architecture for far-edge K3S applications. Three components address the three inflection points: a VXLAN-based overlay that makes pod networking independent of physical network interfaces at a site; pod scheduling with Pod Disruption Budgets that protects inference containers from eviction under resource pressure; and an extended containerd configuration with on-node Helm repositories that reconstructs the full application stack without any external registry access. This architecture was validated at a real agricultural field site.
+We designed and implemented an offline-first deployment architecture for far-edge K3S applications, with three components that each address one of the inflection points. A VXLAN overlay anchored to a virtual dummy0 interface decouples pod networking from physical network interfaces, so the cluster initializes correctly regardless of which interface is present at the deployment site. Init container sequencing with explicit resource requests prevents crash-at-init failures on constrained single-node edge hardware; Pod Disruption Budgets accompany this to keep already-running inference pods from being voluntarily evicted during active missions. Air-gapped image pre-population via \texttt{ctr image import} with on-node Helm repositories allows the full application stack to be reconstructed without any external registry access. The architecture was deployed and validated at a real agricultural field site.
 
 \textbf{OpenPassLite}.
 We designed and implemented a modular drone mission framework built on the Parrot Olympe SDK. Its architecture centers on drop-in mission modules: each flight behavior is a self-contained Python file that the framework loads without modification to its core. Missions for autonomous GPS navigation, orthomosaic survey capture, and return-to-home are implemented and validated in two separate field deployments across two application domains.
 
 \textbf{SmartFields}.
 We designed and implemented a fault-tolerant pipeline orchestrator that coordinates the full detection-to-documentation pipeline in the wildlife monitoring deployment. SmartFields receives camera trap events via MQTT, resolves GPS coordinates, dispatches a three-stage drone mission through OpenPassLite, monitors stage completion through log inspection, and enforces fault-tolerance rules that prioritize drone safety when a stage fails. A threading lock enforces single-mission execution at all times.
-Proposed inflection-point database.
+\textbf{Proposed inflection-point database.}
 
 We propose a structured community repository for documenting far-edge deployment failure modes, their causes, and their architectural resolutions. This artifact does not exist yet; we describe its design and make the case for it as a community infrastructure investment.
-Cross-domain validation.
+
+\textbf{Cross-domain validation.}
 
 \begin{figure}
     \centering
