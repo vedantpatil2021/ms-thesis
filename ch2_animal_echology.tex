@@ -209,7 +209,7 @@ It is important to interpret this figure in the context of the validation condit
 \label{subsec:ch4_p2_applied}
 A complete mission cycle began with the camera trap detection event and ended with the drone landed and the system returned to idle. Approximate timing from field observation: detection event to drone airborne was roughly 45 seconds, accounting for MQTT routing, SmartFields initialization, and OpenPassLite takeoff and stabilization. Full cycle completion from detection to system reset was approximately 150 seconds.
 
-Each successful cycle produced a synchronized data record. The camera trap captured the initial detection frame with YOLOv5 bounding boxes and a timestamp. WildWings captured approximately 50 annotated aerial frames with telemetry, operating at 5 meters altitude with gimbal pitch at -65 degrees. SmartFields logged the full mission timeline across all three stages. The output of each cycle was a complete multimodal record generated entirely without human involvement and stored entirely on-node.
+Each successful cycle produced a synchronized data record. The camera trap captured the initial detection frame with YOLOv5 bounding boxes and a timestamp. WildWings captured approximately 50 annotated aerial frames with telemetry, operating at 5 meters altitude with gimbal pitch at -70 degrees. SmartFields logged the full mission timeline across all three stages. The output of each cycle was a complete multimodal record generated entirely without human involvement and stored entirely on-node.
 
 \subsection{Failure Analysis}
 \label{subsec:ch4_p3_applied}

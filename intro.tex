@@ -54,7 +54,7 @@ This claim is validated through two field deployments.
 
 The first is OpenPASS~\cite{irizarry2022scalable,boubin2022marble}, an agricultural AI system carried to a soybean farm in Stoutsville, Ohio. The initial deployment failed. The failures were analyzed, classified as inflection points, and resolved through architectural changes. The result is a validated offline-first deployment pattern for far-edge K3S applications.
 
-The second is the Smart Backpack system, deployed at The Wilds Conservation Center in southeastern Ohio~\cite{kline2025smartwilds}. This system applied offline-first principles from the beginning of design, before the first line of code was written, on a Raspberry Pi 4B using Docker Compose rather than Kubernetes. Over a 20-hour field deployment it completed 38 autonomous drone missions triggered by camera trap events, with no human involvement in dispatch and no external network dependency during operation.
+The second is the Smart Backpack system, validated at Tuttle Park near The Ohio State University campus in Columbus, Ohio~\cite{kline2025smartwilds}. This system applied offline-first principles from the beginning of design, before the first line of code was written, on a Raspberry Pi 4B using Docker Compose rather than Kubernetes. Over a 20-hour field deployment it completed 38 autonomous drone missions triggered by camera trap events, with no human involvement in dispatch and no external network dependency during operation.
 
 Same principles. Different stack. Different domain. Results consistent with the principles generalizing.
 %% ============================================================
@@ -85,7 +85,7 @@ We propose a structured community repository for documenting far-edge deployment
     \label{fig:placeholder}
 \end{figure}
 
-Offline-first design principles were independently applied in two field environments using two orchestration frameworks, two hardware architectures, and two application domains. The 38-mission, 92\% success-rate result at The Wilds, achieved with zero network dependency and zero human intervention in dispatch, provides the cross-domain evidence that these principles are not K3S-specific or agriculture-specific. They are a generalizable design approach.
+Offline-first design principles were independently applied in two field environments using two orchestration frameworks, two hardware architectures, and two application domains. The 38-mission, 92.7\% success-rate result at The Wilds, achieved with zero network dependency and zero human intervention in dispatch, provides the cross-domain evidence that these principles are not K3S-specific or agriculture-specific. They are a generalizable design approach.
 %% ============================================================
 \section{Thesis Organization}
 \label{sec:thesis_org}
@@ -94,6 +94,6 @@ Chapter 2 surveys related work across edge computing systems, container orchestr
 
 Chapter 3 presents the OpenPASS agricultural system. It describes the Stoutsville, Ohio deployment context, develops the inflection-point classification framework, presents the three inflection points and their architectural resolutions, and reports the results of the offline-first K3S deployment.
 
-Chapter 4 presents the Smart Backpack wildlife monitoring system. It describes the SmartWilds project context, the eight-container Docker Compose architecture, the design of OpenPassLite and SmartFields, and the field validation results from The Wilds Conservation Center.
+Chapter 4 presents the Smart Backpack wildlife monitoring system. It describes the SmartWilds project context, the eight-container Docker Compose architecture, the design of OpenPassLite and SmartFields, and the field validation results from Tuttle Park.
 
 Chapter 5 draws both chapters into a unified analysis. It traces how the design principles developed in Chapter 3 appear in the architecture of Chapter 4, examines what that cross-domain consistency implies, and presents the proposed inflection-point database. It also covers contributions, discusses limitations, and identifies open problems.
