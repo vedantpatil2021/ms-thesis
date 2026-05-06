@@ -42,30 +42,39 @@ Boubin et al. characterize the resource management constraints that arise when A
 The pattern across all of these systems is consistent and important. Each one treats network connectivity as the normal operating state. Offline behavior, where it exists at all, is a degraded mode, a temporary condition the system tolerates until connectivity is restored. None of them was designed with the premise that connectivity might never exist during a mission. None has been deployed in a real agricultural field and documented what broke.
 
 \begin{table}[htbp]
-\centering
-\small
-\caption{Far-edge deployment capability comparison across container orchestration platforms evaluated for disconnected field operation. OpenPASS (this work) extends K3s (vanilla) with targeted architectural solutions for all three infrastructure gaps identified at Stoutsville, Ohio. \textit{Legend:} \cmark~=~full support; \pmark~=~partial support; \xmark~=~not supported; \namark~=~not applicable / out of scope for that platform's design target.}
-\label{tab:edge_capability_comparison}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabularx}{\textwidth}{lXXXXX}
-\hline
-\textbf{System}
-  & \textbf{\makecell{Offline\\Pod\\Reconstruction}}
-  & \textbf{\makecell{Firewall-\\Tolerant\\CNI}}
-  & \textbf{\makecell{Single-Node\\Far-Edge\\Optimized}}
-  & \textbf{\makecell{No Cloud\\Control Plane}}
-  & \textbf{\makecell{Disconnected\\Field\\Validated}} \\
-\hline
-\textbf{OpenPASS} (ours)  & \cmark & \cmark & \cmark & \cmark & \cmark \\
-K3s (vanilla)             & \xmark & \xmark & \cmark & \cmark & \xmark \\
-\hline
-KubeEdge~\cite{xiong2018kubeedge}       & \pmark & \xmark & \xmark & \xmark & \namark \\
-OpenYurt~\cite{yakubov2025comparative}  & \pmark & \xmark & \xmark & \xmark & \namark \\
-MicroK8s                                & \xmark & \xmark & \pmark & \cmark & \namark \\
-Eclipse ioFog~\cite{iofog2019eclipse}   & \xmark & \pmark & \pmark & \pmark & \namark \\
-\hline
-\end{tabularx}
-\end{table}
+  \centering
+  \small
+  \caption[Far-edge deployment capability comparison across container orchestration platforms.]{%
+    Far-edge deployment capability comparison across container orchestration platforms
+    evaluated for disconnected field operation. OpenPASS (this work) extends K3s (vanilla)
+    with targeted architectural solutions for all three infrastructure gaps identified at
+    Stoutsville, Ohio.\\[4pt]
+    \cmark~=~full support;\quad
+    \pmark~=~partial support;\quad
+    \xmark~=~not supported;\quad
+    \namark~=~not applicable / out of scope for that platform's design target.%
+  }
+  \label{tab:edge_capability_comparison}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabularx}{\textwidth}{lXXXXX}
+  \hline
+  \textbf{System}
+    & \textbf{\makecell{Offline\\Pod\\Reconstruction}}
+    & \textbf{\makecell{Firewall-\\Tolerant\\CNI}}
+    & \textbf{\makecell{Single-Node\\Far-Edge\\Optimized}}
+    & \textbf{\makecell{No Cloud\\Control Plane}}
+    & \textbf{\makecell{Disconnected\\Field\\Validated}} \\
+  \hline
+  \textbf{OpenPASS} (ours)  & \cmark & \cmark & \cmark & \cmark & \cmark \\
+  K3s (vanilla)             & \xmark & \xmark & \cmark & \cmark & \xmark \\
+  \hline
+  KubeEdge~\cite{xiong2018kubeedge}       & \pmark & \xmark & \xmark & \xmark & \namark \\
+  OpenYurt~\cite{yakubov2025comparative}  & \pmark & \xmark & \xmark & \xmark & \namark \\
+  MicroK8s                                & \xmark & \xmark & \pmark & \cmark & \namark \\
+  Eclipse ioFog~\cite{iofog2019eclipse}   & \xmark & \pmark & \pmark & \pmark & \namark \\
+  \hline
+  \end{tabularx}
+  \end{table}
 
 That gap in the literature is not a criticism of these systems. They were built for the environments their designers had in mind, and they work well in those environments. The gap is a research opportunity, and it is the one this chapter addresses.
 
@@ -192,6 +201,8 @@ The result is a system that self-reconstructs from a complete state of zero runn
 The three inflection points encountered at Stoutsville are not specific to OpenPASS, to soybean fields, or to Ohio. They are instances of a general failure class that will appear in any far-edge AI deployment where the system was developed under cloud-native assumptions. The trigger conditions differ by site. The failure modes are consistent.
 
 Table~\ref{tab:inflection_taxonomy} formalizes this as a structured taxonomy. Each entry documents the trigger condition, the failure mode it produces, and the architectural resolution that addresses it.
+
+
 
 %% P1.2 FIX: Added \caption{} and \label{tab:inflection_taxonomy} so cross-reference resolves correctly
 \begin{table}[htbp]

@@ -38,12 +38,12 @@ The terms "edge computing" and "far-edge computing" are often used interchangeab
 Consider what this means in practice. An aerial imaging system deployed at a remote agricultural site must complete its analysis during the mission window, not after a round-trip to a cloud backend that may not be reachable. An autonomous wildlife monitoring system triggered by a detection event must dispatch within seconds, not the minutes that a human operator or a cloud relay would require. In both cases, the operational constraint is not primarily about model accuracy or inference speed. It is about whether the platform can function at all under the conditions the site imposes.
 The systems literature has largely not engaged with this. Most edge AI research focuses on making inference faster or smaller on constrained hardware. That work is valuable. But it assumes the platform under the model is functional. This thesis starts one layer below that assumption.
 %% ============================================================
-\section{Two Deployments, One Argument}
-\label{sec:two_deploy_one_arg}
+%\section{Two Deployments, One Argument}
+%\label{sec:two_deploy_one_arg}
 %% ============================================================
-This thesis is grounded in two real field deployments, not laboratory simulations. The first, a containerized agricultural AI system called OpenPASS, was carried to a soybean farm in Stoutsville, Ohio. It failed in ways that were invisible during development. Those failures were analyzed, classified, and resolved through architectural changes. The second, a wildlife monitoring system called the Smart Backpack, was deployed at The Wilds Conservation Center in southeastern Ohio. It was built with the lessons of the first deployment in mind, on different hardware, using a different orchestration framework, in a completely different application domain. It worked.
+%This thesis is grounded in two real field deployments, not laboratory simulations. The first, a %containerized agricultural AI system called OpenPASS, was carried to a soybean farm in Stoutsville, Ohio. It failed in ways that were invisible during development. Those failures were analyzed, classified, and resolved through architectural changes. The second, a wildlife monitoring system called the Smart Backpack, was deployed at The Wilds Conservation Center in southeastern Ohio. It was built with the lessons of the first deployment in mind, on different hardware, using a different orchestration framework, in a completely different application domain. It worked.
 
-The relationship between the two deployments is not coincidental. Chapter 3 documents what broke and why. Chapter 4 shows the same design principles applied proactively, before anything broke. The consistency of the outcome across two domains, two hardware platforms, and two orchestration frameworks is the thesis's central empirical claim.
+%The relationship between the two deployments is not coincidental. Chapter 3 documents what broke and why. Chapter 4 shows the same design principles applied proactively, before anything broke. The consistency of the outcome across two domains, two hardware platforms, and two orchestration frameworks is the thesis's central empirical claim.
 %% ============================================================
 \section{Thesis Claim}
 \label{sec:thesis_claim}
@@ -52,9 +52,9 @@ Far-edge AI systems fail at deployment not due to algorithmic weakness, but due 
 
 This claim is validated through two field deployments.
 
-The first is OpenPASS, an agricultural AI system carried to a soybean farm in Stoutsville, Ohio. The initial deployment failed. The failures were analyzed, classified as inflection points, and resolved through architectural changes. The result is a validated offline-first deployment pattern for far-edge K3S applications.
+The first is OpenPASS~\cite{irizarry2022scalable,boubin2022marble}, an agricultural AI system carried to a soybean farm in Stoutsville, Ohio. The initial deployment failed. The failures were analyzed, classified as inflection points, and resolved through architectural changes. The result is a validated offline-first deployment pattern for far-edge K3S applications.
 
-The second is the Smart Backpack system, deployed at The Wilds Conservation Center in southeastern Ohio. This system applied offline-first principles from the beginning of design, before the first line of code was written, on a Raspberry Pi 4B using Docker Compose rather than Kubernetes. Over a 20-hour field deployment it completed 38 autonomous drone missions triggered by camera trap events, with no human involvement in dispatch and no external network dependency during operation.
+The second is the Smart Backpack system, deployed at The Wilds Conservation Center in southeastern Ohio~\cite{kline2025smartwilds}. This system applied offline-first principles from the beginning of design, before the first line of code was written, on a Raspberry Pi 4B using Docker Compose rather than Kubernetes. Over a 20-hour field deployment it completed 38 autonomous drone missions triggered by camera trap events, with no human involvement in dispatch and no external network dependency during operation.
 
 Same principles. Different stack. Different domain. Results consistent with the principles generalizing.
 %% ============================================================
